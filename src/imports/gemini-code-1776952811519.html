@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFRO - Painel de Projetos e Demandas - Rondônia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configuração do Tailwind para usar as cores do IFRO
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ifro: {
+                            green: '#2F6B38', // Verde oficial aproximado do IFRO
+                            red: '#ED1C24',   // Vermelho oficial aproximado
+                            dark: '#1a4122',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Open Sans', sans-serif; }
+        .text-pulse::after { content: '...'; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col items-center">
+                    <div class="grid grid-cols-3 gap-0.5">
+                        <div class="w-3 h-3 bg-ifro-red rounded-sm"></div>
+                        <div class="w-3 h-3 bg-ifro-green rounded-sm"></div>
+                        <div class="w-3 h-3 bg-ifro-green rounded-sm"></div>
+                        <div class="w-3 h-3 bg-ifro-green rounded-sm"></div>
+                        <div class="w-3 h-3 bg-ifro-green rounded-sm"></div>
+                        <div></div> <div class="w-3 h-3 bg-ifro-green rounded-sm"></div>
+                        <div class="w-3 h-3 bg-ifro-green rounded-sm"></div>
+                        <div></div> </div>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-lg text-gray-900 leading-tight">INSTITUTO FEDERAL</span>
+                    <span class="text-sm text-gray-700 leading-tight">Rondônia</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6 text-sm">
+                <a href="#" class="text-gray-600 hover:text-ifro-green font-medium">Levantamento de Demandas</a>
+                <a href="#" class="text-ifro-green font-bold border-b-2 border-ifro-green pb-1">Gestão de Projetos</a>
+                <a href="#" class="text-gray-600 hover:text-ifro-green font-medium">Financiamento</a>
+                <a href="#" class="text-gray-600 hover:text-ifro-green font-medium">Relatórios</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-600">Olá, <span class="font-semibold text-gray-800">Gestor IFRO</span></span>
+                <img src="https://ui-avatars.com/api/?name=Gestor+IFRO&background=2F6B38&color=fff" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-ifro-green">
+                <button class="text-sm text-gray-500 hover:text-ifro-red">Sair</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-10">
+        
+        <div class="flex items-center justify-between mb-10 pb-4 border-b border-gray-200">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-950">Painel de Projetos e Metas</h1>
+                <p class="text-gray-600 mt-1">Visão geral do plano de trabalho, orçamento e cronograma dos projetos ativos em Rondônia.</p>
+            </div>
+            <button class="bg-ifro-green hover:bg-ifro-dark text-white font-bold py-2.5 px-6 rounded-lg shadow flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Novo Projeto
+            </button>
+        </div>
+
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-ifro-green">
+                <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Orçamento Total Alocado</p>
+                <p class="text-3xl font-black text-gray-900 mt-2">R$ 4.870.000,00</p>
+                <p class="text-sm text-gray-600 mt-1">15 projetos financiados</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-ifro-green">
+                <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Metas Concluídas (Geral)</p>
+                <p class="text-3xl font-black text-gray-900 mt-2">72%</p>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-3">
+                    <div class="bg-ifro-green h-2.5 rounded-full" style="width: 72%"></div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-500">
+                <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Demandas Pendentes de Matching</p>
+                <p class="text-3xl font-black text-yellow-600 mt-2">08</p>
+                <p class="text-sm text-gray-600 mt-1">Aguardando conexão com financiamento</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-ifro-red">
+                <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Projetos com Alerta</p>
+                <p class="text-3xl font-black text-ifro-red mt-2">02</p>
+                <p class="text-sm text-gray-600 mt-1">Atraso no cronograma ou estouro de custo</p>
+            </div>
+        </section>
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-10">
+            
+            <div class="p-8 border-b border-gray-100 bg-gray-50 flex justify-between items-start gap-6">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 bg-ifro-green text-white rounded-full text-xs font-bold uppercase track">Ativo</span>
+                        <span class="text-sm text-gray-500 font-mono">ID: IFRO-PJ-2026-004</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-950 mt-3">Implementação de Núcleo de Robótica Industrial - Câmpus Ji-Paraná</h2>
+                    <p class="text-gray-700 mt-1 max-w-3xl">Projeto voltado para atender a demanda do setor produtivo metal-mecânico da região central de Rondônia, focando em automação e capacitação.</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="text-sm text-gray-500 uppercase font-semibold">Orçamento do Projeto</p>
+                    <p class="text-3xl font-black text-ifro-green mt-1">R$ 1.250.000,00</p>
+                    <button class="text-ifro-green hover:text-ifro-dark text-sm font-semibold mt-2 flex items-center gap-1 justify-end">
+                        Ver Plano de Trabalho Completo (PDF)
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900">Detalhamento do Plano de Trabalho</h3>
+                    <div class="flex gap-2">
+                        <button class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            Exportar Planilha
+                        </button>
+                        <button class="bg-ifro-green hover:bg-ifro-dark text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Adicionar Meta
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-100 rounded-lg">
+                        <thead class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="py-4 px-5 text-left font-bold">Meta / Atividade</th>
+                                <th class="py-4 px-5 text-center font-bold">Cronograma</th>
+                                <th class="py-4 px-5 text-right font-bold">Custo Estimado</th>
+                                <th class="py-4 px-5 text-center font-bold">Custo Realizado</th>
+                                <th class="py-4 px-5 text-center font-bold">Status</th>
+                                <th class="py-4 px-5 text-center font-bold">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-800 text-sm divide-y divide-gray-100">
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-5 px-5">
+                                    <p class="font-semibold text-ifro-green">01. Adequação da Infraestrutura Física</p>
+                                    <p class="text-xs text-gray-600 mt-1">Reforma do laboratório 03, instalação elétrica trifásica e climatização.</p>
+                                </td>
+                                <td class="py-5 px-5 text-center font-medium">Jan - Abr 2026</td>
+                                <td class="py-5 px-5 text-right font-mono text-gray-900">R$ 180.000,00</td>
+                                <td class="py-5 px-5 text-right font-mono text-gray-900 bg-gray-50">R$ 178.500,00</td>
+                                <td class="py-5 px-5 text-center">
+                                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase">CONCLUÍDO</span>
+                                </td>
+                                <td class="py-5 px-5 text-center">
+                                    <button class="text-ifro-green hover:text-ifro-dark font-semibold">Editar</button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-5 px-5">
+                                    <p class="font-semibold text-ifro-green">02. Aquisição de Braços Robóticos e Periféricos</p>
+                                    <p class="text-xs text-gray-600 mt-1">Compra de 3 braços industriais articulados, garras e software de simulação.</p>
+                                </td>
+                                <td class="py-5 px-5 text-center font-medium">Mai - Ago 2026</td>
+                                <td class="py-5 px-5 text-right font-mono text-gray-900">R$ 850.000,00</td>
+                                <td class="py-5 px-5 text-right font-mono text-ifro-red bg-red-50 font-semibold" title="Estouro de orçamento na importação">R$ 895.000,00 (⚠️)</td>
+                                <td class="py-5 px-5 text-center text-pulse">
+                                    <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold uppercase italic">PROCESSANDO</span>
+                                </td>
+                                <td class="py-5 px-5 text-center">
+                                    <button class="text-ifro-green hover:text-ifro-dark font-semibold">Editar</button>
+                                </td>
+                            </tr>
+                             <tr class="hover:bg-gray-50">
+                                <td class="py-5 px-5">
+                                    <p class="font-semibold text-ifro-green">03. Capacitação Docente e Técnica</p>
+                                    <p class="text-xs text-gray-600 mt-1">Treinamento avançado para 5 servidores do IFRO em Python e PLC.</p>
+                                </td>
+                                <td class="py-5 px-5 text-center font-medium">Set - Out 2026</td>
+                                <td class="py-5 px-5 text-right font-mono text-gray-900">R$ 120.000,00</td>
+                                <td class="py-5 px-5 text-right font-mono text-gray-400 bg-gray-50">-</td>
+                                <td class="py-5 px-5 text-center">
+                                    <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase">AGENDADO</span>
+                                </td>
+                                <td class="py-5 px-5 text-center">
+                                    <button class="text-ifro-green hover:text-ifro-dark font-semibold">Editar</button>
+                                </td>
+                            </tr>
+                             <tr class="hover:bg-gray-50">
+                                <td class="py-5 px-5">
+                                    <p class="font-semibold text-ifro-green">04. Evento de Entrega e Matching Setorial</p>
+                                    <p class="text-xs text-gray-600 mt-1">Workshop de encerramento com empresas locais para firmar parcerias de uso.</p>
+                                </td>
+                                <td class="py-5 px-5 text-center font-medium">Dez 2026</td>
+                                <td class="py-5 px-5 text-right font-mono text-gray-900">R$ 100.000,00</td>
+                                <td class="py-5 px-5 text-right font-mono text-gray-400 bg-gray-50">-</td>
+                                <td class="py-5 px-5 text-center">
+                                    <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase">AGENDADO</span>
+                                </td>
+                                <td class="py-5 px-5 text-center">
+                                    <button class="text-ifro-green hover:text-ifro-dark font-semibold">Editar</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="flex items-center justify-between mt-6 text-sm text-gray-600">
+                    <span>Mostrando 1-4 de 4 metas do projeto</span>
+                    <div class="flex gap-1">
+                        <button class="px-3 py-1 border rounded-lg bg-white hover:bg-gray-50 opacity-50 cursor-not-allowed">Anterior</button>
+                        <button class="px-3 py-1 border rounded-lg bg-white hover:bg-gray-50">Próximo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-900 text-gray-300 py-12 mt-10">
+        <div class="container mx-auto px-6 text-center">
+            <div class="flex items-center justify-center gap-2 mb-4">
+                 <div class="grid grid-cols-3 gap-0.5 opacity-50">
+                    <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
+                    <div></div>
+                    <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
+                    <div></div>
+                </div>
+                <span class="font-bold text-gray-100">IFRO - Câmpus Ji-Paraná</span>
+            </div>
+            <p class="text-sm">Sistema de Gestão de Demandas do Setor Produtivo e Projetos de Inovação.</p>
+            <p class="text-xs text-gray-500 mt-2">&copy; 2026 Instituto Federal de Rondônia. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

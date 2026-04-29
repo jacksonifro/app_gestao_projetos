@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFRO - Solução Tecnológica de Demandas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ifro: { green: '#2F6B38', red: '#ED1C24', dark: '#1a4122', light: '#f0fdf4' }
+                    }
+                }
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <section id="login-section" class="app-section min-h-screen flex items-center justify-center bg-ifro-green bg-opacity-10 px-4">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
+            <div class="flex flex-col items-center mb-8">
+                <div class="w-16 h-16 bg-ifro-green rounded-lg flex items-center justify-center mb-4 shadow-lg">
+                    <span class="text-white font-black text-2xl tracking-tighter italic">IF</span>
+                </div>
+                <h2 class="text-2xl font-extrabold text-gray-900">Portal de Demandas</h2>
+                <p class="text-sm text-gray-500">Gestão Setorial de Rondônia</p>
+            </div>
+            <form onsubmit="event.preventDefault(); switchTab('demandas-section');" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">E-mail ou CPF</label>
+                    <input type="text" placeholder="exemplo@ifro.edu.br" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-ifro-green outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700">Senha</label>
+                    <input type="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-ifro-green outline-none transition-all">
+                </div>
+                <button type="submit" class="w-full bg-ifro-green hover:bg-ifro-dark text-white font-bold py-3 rounded-lg transition-colors shadow-lg">
+                    Acessar Sistema
+                </button>
+                <div class="relative flex py-4 items-center">
+                    <div class="flex-grow border-t border-gray-200"></div>
+                    <span class="flex-shrink mx-4 text-gray-400 text-xs uppercase font-bold">ou</span>
+                    <div class="flex-grow border-t border-gray-200"></div>
+                </div>
+                <button type="button" class="w-full border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition-all">
+                    <img src="https://www.gov.br/++theme++padrao_govbr/img/govbr-logo-large.png" alt="gov.br" class="h-4">
+                    Entrar com gov.br
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section id="demandas-section" class="app-section hidden min-h-screen pb-20">
+        <nav class="bg-white border-b px-6 py-4 flex justify-between items-center sticky top-0 shadow-sm z-10">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-ifro-green rounded flex items-center justify-center text-white font-bold text-xs">IF</div>
+                <span class="font-bold text-lg hidden md:block">Sistema de Inovação IFRO</span>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="switchTab('demandas-section')" class="text-ifro-green font-bold text-sm">Levantamento</button>
+                <button class="text-gray-500 hover:text-ifro-green font-semibold text-sm">Projetos Ativos</button>
+            </div>
+        </nav>
+
+        <div class="container mx-auto px-4 mt-8 max-w-4xl">
+            <div class="bg-ifro-green p-8 rounded-t-2xl text-white">
+                <h2 class="text-2xl font-bold">Levantamento de Demandas do Setor Produtivo</h2>
+                <p class="text-ifro-light text-opacity-80 mt-2">Identifique gargalos tecnológicos e necessidades industriais para que possamos conectar com linhas de financiamento e pesquisa.</p>
+            </div>
+
+            <div class="bg-white p-8 rounded-b-2xl shadow-xl border border-gray-100">
+                <form class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Empresa / Setor</label>
+                            <input type="text" placeholder="Nome da Indústria ou Cooperativa" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-ifro-green">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                            <select class="w-full px-4 py-2 border rounded-lg outline-none focus:border-ifro-green">
+                                <option>Metal-mecânico</option>
+                                <option>Agronegócio</option>
+                                <option>Moveleiro</option>
+                                <option>Software / TI</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Descrição da Demanda Tecnológica</label>
+                        <textarea rows="4" placeholder="Descreva o problema ou a oportunidade de melhoria..." class="w-full px-4 py-2 border rounded-lg outline-none focus:border-ifro-green"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Impacto Esperado</label>
+                            <select class="w-full px-4 py-2 border rounded-lg outline-none focus:border-ifro-green">
+                                <option>Aumento de Produtividade</option>
+                                <option>Redução de Custos</option>
+                                <option>Automação de Processos</option>
+                                <option>Sustentabilidade/Ecoeficiência</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Estimativa de Investimento Necessário</label>
+                            <input type="text" placeholder="Ex: R$ 50.000,00" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-ifro-green">
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg border-l-4 border-ifro-red">
+                        <p class="text-xs text-gray-600">Ao enviar, esta demanda será analisada pelo **Comitê de Inovação do IFRO** para matching com editais de financiamento (Embrapii, Sebrae, Finep).</p>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="reset" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-600 font-semibold hover:bg-gray-50">Limpar</button>
+                        <button type="submit" class="px-6 py-2 bg-ifro-green text-white rounded-lg font-bold hover:bg-ifro-dark shadow-md">Submeter Demanda</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mt-12">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-ifro-red rounded-full"></span>
+                    Últimas Demandas Registradas
+                </h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-gray-900">Automação de Secagem de Grãos</p>
+                            <p class="text-xs text-gray-500">Setor: Agronegócio | Ji-Paraná</p>
+                        </div>
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-full">EM ANÁLISE</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-gray-900">Otimização de Logística Reversa</p>
+                            <p class="text-xs text-gray-500">Setor: Indústria Moveleira | Ariquemes</p>
+                        </div>
+                        <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">VINCULADO A PROJETO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>
