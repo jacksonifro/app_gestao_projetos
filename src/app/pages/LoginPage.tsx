@@ -29,7 +29,8 @@ export function LoginPage() {
     });
 
     if (error) {
-      setError(error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : "Erro ao fazer login.");
+      console.error("Erro detalhado do Supabase:", error);
+      setError(error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : `Erro do servidor: ${error.message}`);
       setLoading(false);
     } else {
       navigate("/dashboard");
