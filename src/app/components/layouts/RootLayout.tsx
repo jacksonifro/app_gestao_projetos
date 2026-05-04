@@ -23,7 +23,6 @@ export function RootLayout() {
   const canSeeProjetos = userRole === 'ADMIN' || userRole === 'REITORIA';
   const canSeeAvaliacoes = userRole === 'ADMIN' || userRole === 'AVALIADOR';
   const canSeeCadastros = userRole === 'ADMIN' || userRole === 'REITORIA';
-  const canSeeUsuarios = userRole === 'ADMIN';
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -111,6 +110,18 @@ export function RootLayout() {
             {sidebarOpen && <span className="text-sm">Meus Projetos</span>}
           </Link>
 
+          <Link
+            to="/acompanhamento"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+              isActive("/acompanhamento")
+                ? "bg-[#2F6B38] text-white font-bold shadow-md"
+                : "text-gray-700 hover:bg-gray-100 font-semibold"
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
+            {sidebarOpen && <span className="text-sm">Acompanhamento</span>}
+          </Link>
+
           {canSeeAvaliacoes && (
             <Link
               to="/avaliacoes"
@@ -156,15 +167,15 @@ export function RootLayout() {
               </Link>
 
               <Link
-                to="/cadastros/especialistas"
+                to="/cadastros/servidores"
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                  isActive("/cadastros/especialistas")
+                  isActive("/cadastros/servidores")
                     ? "bg-[#2F6B38] text-white font-bold shadow-md"
                     : "text-gray-700 hover:bg-gray-100 font-semibold"
                 }`}
               >
                 <Users className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && <span className="text-sm">Especialistas</span>}
+                {sidebarOpen && <span className="text-sm">Servidores</span>}
               </Link>
 
               <Link
@@ -179,20 +190,6 @@ export function RootLayout() {
                 {sidebarOpen && <span className="text-sm">Comissões</span>}
               </Link>
             </>
-          )}
-
-          {canSeeUsuarios && (
-            <Link
-              to="/cadastros/usuarios"
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                isActive("/cadastros/usuarios")
-                  ? "bg-[#2F6B38] text-white font-bold shadow-md"
-                  : "text-gray-700 hover:bg-gray-100 font-semibold"
-              }`}
-            >
-              <UserCog className="w-5 h-5 flex-shrink-0" />
-              {sidebarOpen && <span className="text-sm">Usuários</span>}
-            </Link>
           )}
         </nav>
 
@@ -213,10 +210,11 @@ export function RootLayout() {
 
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-600">
-                Olá, <span className="font-semibold text-gray-900">Gestor IFRO</span>
+                Olá, <span className="font-semibold text-gray-900">{perfil?.nome_completo?.split(' ')[0] || 'Usuário'}</span>
+                <span className="ml-1 text-xs font-bold text-[#2F6B38]">• {userRole}</span>
               </div>
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2F6B38] to-[#1a4122] flex items-center justify-center text-white font-bold shadow-md">
-                GI
+                {perfil?.nome_completo ? perfil.nome_completo.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() : 'U'}
               </div>
               <button
                 onClick={handleLogout}

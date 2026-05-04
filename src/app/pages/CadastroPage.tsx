@@ -18,6 +18,9 @@ export function CadastroPage() {
     campus: "",
     setor: "",
     telefone: "",
+    titulacao: "Graduado",
+    especialidades: "",
+    lattes: "",
     senha: "",
     confirmarSenha: "",
   });
@@ -57,6 +60,9 @@ export function CadastroPage() {
           campus: formData.campus,
           setor: formData.setor,
           telefone: formData.telefone,
+          titulacao: formData.titulacao,
+          especialidades: formData.especialidades,
+          lattes: formData.lattes,
         }
       }
     });
@@ -212,6 +218,54 @@ export function CadastroPage() {
                       className="h-11"
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-bold text-gray-900 flex items-center gap-2 pb-2 border-b">
+                  <User className="w-4 h-4 text-[#2F6B38]" />
+                  Formação e Especialidades
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="titulacao">Titulação *</Label>
+                    <select
+                      id="titulacao"
+                      value={formData.titulacao}
+                      onChange={(e) => setFormData({ ...formData, titulacao: e.target.value })}
+                      className="w-full h-11 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                      required
+                    >
+                      <option value="Graduado">Graduado</option>
+                      <option value="Especialista">Especialista</option>
+                      <option value="Mestre">Mestre</option>
+                      <option value="Doutor">Doutor</option>
+                      <option value="Pós-Doutor">Pós-Doutor</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lattes">Currículo Lattes (opcional)</Label>
+                    <Input
+                      id="lattes"
+                      placeholder="URL do Lattes"
+                      value={formData.lattes}
+                      onChange={(e) => setFormData({ ...formData, lattes: e.target.value })}
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="especialidades">Especialidades / Áreas de Atuação</Label>
+                  <Input
+                    id="especialidades"
+                    placeholder="Ex: Automação Industrial, IoT, Python, PLC"
+                    value={formData.especialidades}
+                    onChange={(e) => setFormData({ ...formData, especialidades: e.target.value })}
+                    className="h-11"
+                  />
                 </div>
               </div>
 

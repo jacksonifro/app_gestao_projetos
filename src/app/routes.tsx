@@ -10,11 +10,11 @@ import { MatchingPage } from "./pages/MatchingPage";
 import { ProjetosPage } from "./pages/ProjetosPage";
 import { FinanciamentoPage } from "./pages/FinanciamentoPage";
 import { CampusPage } from "./pages/CampusPage";
-import { EspecialistasPage } from "./pages/EspecialistasPage";
+import { ServidoresPage } from "./pages/ServidoresPage";
 import { ComissaoPage } from "./pages/ComissaoPage";
 import { AvaliacoesPage } from "./pages/AvaliacoesPage";
 import { MeusProjetosPage } from "./pages/MeusProjetosPage";
-import { UsuariosPage } from "./pages/UsuariosPage";
+import { AcompanhamentoPage } from "./pages/AcompanhamentoPage";
 
 function RootRedirect() {
   const { session, loading } = useAuth();
@@ -50,12 +50,12 @@ export const router = createBrowserRouter([
       { path: "matching", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><MatchingPage /></ProtectedRoute> },
       { path: "projetos", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><ProjetosPage /></ProtectedRoute> },
       { path: "meus-projetos", element: <MeusProjetosPage /> },
+      { path: "acompanhamento", element: <AcompanhamentoPage /> },
       { path: "avaliacoes", element: <ProtectedRoute allowedRoles={['AVALIADOR', 'ADMIN']}><AvaliacoesPage /></ProtectedRoute> },
       { path: "cadastros/financiamento", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><FinanciamentoPage /></ProtectedRoute> },
       { path: "cadastros/campus", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><CampusPage /></ProtectedRoute> },
-      { path: "cadastros/especialistas", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><EspecialistasPage /></ProtectedRoute> },
+      { path: "cadastros/servidores", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><ServidoresPage /></ProtectedRoute> },
       { path: "cadastros/comissoes", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><ComissaoPage /></ProtectedRoute> },
-      { path: "cadastros/usuarios", element: <ProtectedRoute allowedRoles={['ADMIN']}><UsuariosPage /></ProtectedRoute> },
     ],
   },
 ]);

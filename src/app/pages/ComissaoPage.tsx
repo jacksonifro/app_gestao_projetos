@@ -39,8 +39,17 @@ export function ComissaoPage() {
   }, []);
 
   const fetchEspecialistas = async () => {
-    const { data } = await supabase.from("especialistas").select("id, nome, titulacao, campus, especialidades");
-    if (data) setEspecialistasDisponiveis(data);
+    const { data, error } = await supabase.from("perfis").select("id, nome_completo, titulacao, campus, especialidades, role").in('role', ['AVALIADOR', 'ADMIN', 'REITORIA']);
+    console.log("fetchEspecialistas - data:", data, "error:", error);
+    if (data) {
+      setEspecialistasDisponiveis(data.map((d: any) => ({
+        id: d.id,
+        nome: d.nome_completo || "",
+        titulacao: d.titulacao || "Graduado",
+        campus: d.campus || "",
+        especialidades: d.especialidades || "",
+      })));
+    }
   };
 
   const fetchComissoes = async () => {
@@ -49,12 +58,18 @@ export function ComissaoPage() {
 
     const { data: relacoes } = await supabase.from('comissao_especialistas').select(`
       comissao_id,
-      especialista:especialistas (id, nome, titulacao, campus, especialidades)
+      especialista:perfis (id, nome_completo, titulacao, campus, especialidades)
     `);
 
     const formatadas = comissoesData.map((c: any) => {
       const espRel = relacoes?.filter((r: any) => r.comissao_id === c.id) || [];
-      const especialistas = espRel.map((r: any) => r.especialista);
+      const especialistas = espRel.map((r: any) => ({
+        id: r.especialista?.id,
+        nome: r.especialista?.nome_completo || "",
+        titulacao: r.especialista?.titulacao || "Graduado",
+        campus: r.especialista?.campus || "",
+        especialidades: r.especialista?.especialidades || "",
+      }));
       
       return {
         id: c.id,

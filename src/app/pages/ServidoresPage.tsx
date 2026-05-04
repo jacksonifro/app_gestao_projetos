@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Award, Edit, Eye, ExternalLink, Mail, Phone, Plus, Search, Trash2, User, Users } from "lucide-react";
+import { Award, Edit, Eye, ExternalLink, Mail, Phone, Plus, Search, Trash2, Users, ShieldCheck } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { modalErro, modalSucesso } from "../../lib/alerts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -12,25 +12,32 @@ import { Badge } from "../components/ui/badge";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { supabase } from "../../lib/supabase";
 import { formatTelefone } from "../../lib/masks";
+import { useAuth } from "../../contexts/AuthContext";
 
-interface Especialista {
+interface Servidor {
   id: string;
-  nome: string;
-  titulacao: string;
-  campus: string;
-  especialidades: string;
+  nome_completo: string;
   email: string;
+  siape: string;
+  campus: string;
+  setor: string;
   telefone: string;
+  titulacao: string;
+  especialidades: string;
   lattes?: string;
-  projetosAtivos: number;
+  role: string;
+  projetos_ativos: number;
 }
 
-export function EspecialistasPage() {
-  const [especialistas, setEspecialistas] = useState<Especialista[]>([]);
+export function ServidoresPage() {
+  const { userRole } = useAuth();
+  const isAdmin = userRole === "ADMIN";
+
+  const [servidores, setServidores] = useState<Servidor[]>([]);
   const [campuses, setCampuses] = useState<{ id: string; nome: string }[]>([]);
 
   useEffect(() => {
-    fetchEspecialistas();
+    fetchServidores();
     fetchCampuses();
   }, []);
 
@@ -41,67 +48,95 @@ export function EspecialistasPage() {
     }
   };
 
-  const fetchEspecialistas = async () => {
-    const { data, error } = await supabase.from('especialistas').select('*').order('created_at', { ascending: false });
+  const fetchServidores = async () => {
+    const { data, error } = await supabase.from('perfis').select('*').order('nome_completo');
     if (!error && data) {
       const formatted = data.map((d: any) => ({
         id: d.id,
-        nome: d.nome,
-        titulacao: d.titulacao,
-        campus: d.campus,
-        especialidades: d.especialidades,
-        email: d.email,
-        telefone: d.telefone,
+        nome_completo: d.nome_completo || "",
+        email: d.email || "",
+        siape: d.siape || "",
+        campus: d.campus || "",
+        setor: d.setor || "",
+        telefone: d.telefone || "",
+        titulacao: d.titulacao || "Graduado",
+        especialidades: d.especialidades || "",
         lattes: d.lattes,
-        projetosAtivos: d.projetos_ativos || 0
+        role: d.role || "SERVIDOR",
+        projetos_ativos: d.projetos_ativos || 0,
       }));
-      setEspecialistas(formatted);
+      setServidores(formatted);
     }
   };
 
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Especialista | null>(null);
-  const [viewingItem, setViewingItem] = useState<Especialista | null>(null);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Servidor | null>(null);
+  const [viewingItem, setViewingItem] = useState<Servidor | null>(null);
+  const [roleItem, setRoleItem] = useState<Servidor | null>(null);
+  const [newRole, setNewRole] = useState("SERVIDOR");
   const [formData, setFormData] = useState({
-    nome: "",
-    titulacao: "Graduado",
-    campus: "",
-    especialidades: "",
+    nome_completo: "",
     email: "",
+    siape: "",
+    campus: "",
+    setor: "",
     telefone: "",
+    titulacao: "Graduado",
+    especialidades: "",
     lattes: "",
   });
 
-  const handleView = (item: Especialista) => {
+  const handleView = (item: Servidor) => {
     setViewingItem(item);
     setViewDialogOpen(true);
   };
 
-  const handleEdit = (item: Especialista) => {
+  const handleEdit = (item: Servidor) => {
     setEditingItem(item);
     setFormData({
-      nome: item.nome,
-      titulacao: item.titulacao,
-      campus: item.campus,
-      especialidades: item.especialidades,
+      nome_completo: item.nome_completo,
       email: item.email,
+      siape: item.siape,
+      campus: item.campus,
+      setor: item.setor,
       telefone: item.telefone,
+      titulacao: item.titulacao,
+      especialidades: item.especialidades,
       lattes: item.lattes || "",
     });
     setDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este especialista?")) {
-      const { error } = await supabase.from('especialistas').delete().eq('id', id);
+    if (confirm("Tem certeza que deseja excluir este servidor?")) {
+      const { error } = await supabase.from('perfis').delete().eq('id', id);
       if (!error) {
-        setEspecialistas(especialistas.filter((e) => e.id !== id));
-        modalSucesso("Especialista excluído com sucesso!");
+        setServidores(servidores.filter((e) => e.id !== id));
+        modalSucesso("Servidor excluído com sucesso!");
       } else {
         modalErro("Erro ao excluir: " + error.message);
       }
+    }
+  };
+
+  const handleOpenRoleDialog = (item: Servidor) => {
+    setRoleItem(item);
+    setNewRole(item.role);
+    setRoleDialogOpen(true);
+  };
+
+  const handleSaveRole = async () => {
+    if (!roleItem) return;
+    const { error } = await supabase.from('perfis').update({ role: newRole }).eq('id', roleItem.id);
+    if (error) {
+      modalErro("Erro ao alterar perfil: " + error.message);
+    } else {
+      modalSucesso("Perfil alterado com sucesso!");
+      setRoleDialogOpen(false);
+      fetchServidores();
     }
   };
 
@@ -109,45 +144,49 @@ export function EspecialistasPage() {
     e.preventDefault();
 
     const payload = {
-      nome: formData.nome,
-      titulacao: formData.titulacao,
-      campus: formData.campus,
-      especialidades: formData.especialidades,
+      nome_completo: formData.nome_completo,
       email: formData.email,
+      siape: formData.siape,
+      campus: formData.campus,
+      setor: formData.setor,
       telefone: formData.telefone,
-      lattes: formData.lattes
+      titulacao: formData.titulacao,
+      especialidades: formData.especialidades,
+      lattes: formData.lattes || null,
     };
 
     if (editingItem) {
-      const { error } = await supabase.from('especialistas').update(payload).eq('id', editingItem.id);
+      const { error } = await supabase.from('perfis').update(payload).eq('id', editingItem.id);
       if (error) {
         modalErro("Erro ao atualizar: " + error.message);
         return;
       }
-      modalSucesso("Especialista atualizado com sucesso!");
+      modalSucesso("Servidor atualizado com sucesso!");
     } else {
-      const { error } = await supabase.from('especialistas').insert([{ ...payload, projetos_ativos: 0 }]);
+      const { error } = await supabase.from('perfis').insert([{ ...payload, role: 'SERVIDOR', projetos_ativos: 0 }]);
       if (error) {
         modalErro("Erro ao cadastrar: " + error.message);
         return;
       }
-      modalSucesso("Especialista cadastrado com sucesso!");
+      modalSucesso("Servidor cadastrado com sucesso!");
     }
 
     setDialogOpen(false);
     resetForm();
-    fetchEspecialistas();
+    fetchServidores();
   };
 
   const resetForm = () => {
     setEditingItem(null);
     setFormData({
-      nome: "",
-      titulacao: "Graduado",
-      campus: "",
-      especialidades: "",
+      nome_completo: "",
       email: "",
+      siape: "",
+      campus: "",
+      setor: "",
       telefone: "",
+      titulacao: "Graduado",
+      especialidades: "",
       lattes: "",
     });
   };
@@ -166,11 +205,22 @@ export function EspecialistasPage() {
       .toUpperCase();
   };
 
-  const filteredEspecialistas = especialistas.filter((item) =>
-    item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const getRoleBadge = (role: string) => {
+    const styles: Record<string, string> = {
+      ADMIN: "bg-purple-100 text-purple-700 border-purple-200",
+      REITORIA: "bg-blue-100 text-blue-700 border-blue-200",
+      AVALIADOR: "bg-orange-100 text-orange-700 border-orange-200",
+      SERVIDOR: "bg-gray-100 text-gray-700 border-gray-200",
+    };
+    return styles[role] || styles.SERVIDOR;
+  };
+
+  const filteredServidores = servidores.filter((item) =>
+    item.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.titulacao.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.campus.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.especialidades.toLowerCase().includes(searchTerm.toLowerCase())
+    item.especialidades.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.siape.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -181,23 +231,23 @@ export function EspecialistasPage() {
             <div className="w-12 h-12 bg-gradient-to-br from-[#2F6B38] to-[#1a4122] rounded-xl flex items-center justify-center shadow-md">
               <Users className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Especialistas em Projetos</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900">Servidores</h1>
           </div>
-          <p className="text-gray-600 text-lg">Gerencie os especialistas e pesquisadores dos campus</p>
+          <p className="text-gray-600 text-lg">Gerencie os servidores cadastrados no sistema</p>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleOpenDialog} size="lg" className="bg-[#2F6B38] hover:bg-[#1a4122] shadow-lg">
               <Plus className="w-5 h-5 mr-2" />
-              Novo Especialista
+              Novo Servidor
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingItem ? "Editar" : "Novo"} Especialista</DialogTitle>
+              <DialogTitle>{editingItem ? "Editar" : "Novo"} Servidor</DialogTitle>
               <DialogDescription>
-                Preencha os dados do especialista e suas áreas de atuação
+                Preencha os dados do servidor
               </DialogDescription>
             </DialogHeader>
 
@@ -205,16 +255,29 @@ export function EspecialistasPage() {
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nome">Nome Completo *</Label>
+                    <Label htmlFor="nome_completo">Nome Completo *</Label>
                     <Input
-                      id="nome"
-                      value={formData.nome}
-                      onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                      placeholder="Ex: Dr. Carlos Alberto Santos"
+                      id="nome_completo"
+                      value={formData.nome_completo}
+                      onChange={(e) => setFormData({ ...formData, nome_completo: e.target.value })}
+                      placeholder="Ex: Carlos Alberto Santos"
                       required
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="siape">SIAPE *</Label>
+                    <Input
+                      id="siape"
+                      value={formData.siape}
+                      onChange={(e) => setFormData({ ...formData, siape: e.target.value })}
+                      placeholder="0000000"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="titulacao">Titulação *</Label>
                     <select
@@ -231,35 +294,45 @@ export function EspecialistasPage() {
                       <option value="Pós-Doutor">Pós-Doutor</option>
                     </select>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="campus">Campus *</Label>
+                    <select
+                      id="campus"
+                      value={formData.campus}
+                      onChange={(e) => setFormData({ ...formData, campus: e.target.value })}
+                      className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                      required
+                    >
+                      <option value="">Selecione um campus</option>
+                      {campuses.map((c) => (
+                        <option key={c.id} value={c.nome}>
+                          {c.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="campus">Campus *</Label>
-                  <select
-                    id="campus"
-                    value={formData.campus}
-                    onChange={(e) => setFormData({ ...formData, campus: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                  <Label htmlFor="setor">Setor/Departamento *</Label>
+                  <Input
+                    id="setor"
+                    value={formData.setor}
+                    onChange={(e) => setFormData({ ...formData, setor: e.target.value })}
+                    placeholder="Ex: Coordenação de Pesquisa"
                     required
-                  >
-                    <option value="">Selecione um campus</option>
-                    {campuses.map((c) => (
-                      <option key={c.id} value={c.nome}>
-                        {c.nome}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="especialidades">Especialidades / Áreas de Atuação *</Label>
+                  <Label htmlFor="especialidades">Especialidades / Áreas de Atuação</Label>
                   <Textarea
                     id="especialidades"
                     value={formData.especialidades}
                     onChange={(e) => setFormData({ ...formData, especialidades: e.target.value })}
                     placeholder="Ex: Automação Industrial, IoT, Python, PLC"
                     rows={2}
-                    required
                   />
                 </div>
 
@@ -312,10 +385,11 @@ export function EspecialistasPage() {
         </Dialog>
       </div>
 
+      {/* Modal de Visualização */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Detalhes do Especialista</DialogTitle>
+            <DialogTitle>Detalhes do Servidor</DialogTitle>
             <DialogDescription>Visualização completa dos dados cadastrados</DialogDescription>
           </DialogHeader>
 
@@ -324,31 +398,49 @@ export function EspecialistasPage() {
               <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border">
                 <Avatar className="w-20 h-20 border-4 border-white shadow-lg">
                   <AvatarFallback className="bg-gradient-to-br from-[#2F6B38] to-[#1a4122] text-white font-bold text-2xl">
-                    {getInitials(viewingItem.nome)}
+                    {getInitials(viewingItem.nome_completo)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="font-bold text-xl text-gray-900">{viewingItem.nome}</h3>
+                  <h3 className="font-bold text-xl text-gray-900">{viewingItem.nome_completo}</h3>
                   <div className="flex items-center gap-2 mt-1 text-gray-600">
                     <Award className="w-4 h-4" />
                     <span className="font-semibold">{viewingItem.titulacao}</span>
                   </div>
-                  <Badge variant="outline" className="mt-2 font-semibold">
-                    {viewingItem.campus}
-                  </Badge>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant="outline" className="font-semibold">
+                      {viewingItem.campus}
+                    </Badge>
+                    <Badge variant="outline" className={`font-bold ${getRoleBadge(viewingItem.role)}`}>
+                      {viewingItem.role}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <Label className="text-gray-500 text-xs uppercase mb-2 block">Especialidades / Áreas de Atuação</Label>
-                <div className="flex flex-wrap gap-2">
-                  {viewingItem.especialidades.split(",").map((esp, idx) => (
-                    <Badge key={idx} className="bg-[#2F6B38]/10 text-[#2F6B38] border-0">
-                      {esp.trim()}
-                    </Badge>
-                  ))}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-gray-500 text-xs uppercase">SIAPE</Label>
+                  <p className="text-gray-900 font-semibold mt-1">{viewingItem.siape}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500 text-xs uppercase">Setor</Label>
+                  <p className="text-gray-900 mt-1">{viewingItem.setor}</p>
                 </div>
               </div>
+
+              {viewingItem.especialidades && (
+                <div>
+                  <Label className="text-gray-500 text-xs uppercase mb-2 block">Especialidades / Áreas de Atuação</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingItem.especialidades.split(",").map((esp, idx) => (
+                      <Badge key={idx} className="bg-[#2F6B38]/10 text-[#2F6B38] border-0">
+                        {esp.trim()}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-6 pt-4 border-t">
                 <div>
@@ -384,7 +476,7 @@ export function EspecialistasPage() {
 
               <div className="pt-4 border-t">
                 <Label className="text-gray-500 text-xs uppercase">Projetos Ativos</Label>
-                <p className="text-4xl font-black text-[#2F6B38] mt-2">{viewingItem.projetosAtivos}</p>
+                <p className="text-4xl font-black text-[#2F6B38] mt-2">{viewingItem.projetos_ativos}</p>
               </div>
             </div>
           )}
@@ -397,18 +489,58 @@ export function EspecialistasPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Alterar Perfil (só ADMIN) */}
+      <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Alterar Perfil de Acesso</DialogTitle>
+            <DialogDescription>
+              Altere o nível de acesso do servidor <span className="font-bold text-gray-900">{roleItem?.nome_completo}</span>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            <div>
+              <Label htmlFor="role-select" className="text-gray-700 font-semibold mb-2 block">
+                Nível de Acesso
+              </Label>
+              <select
+                id="role-select"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+              >
+                <option value="SERVIDOR">Servidor (Submissão e Execução)</option>
+                <option value="AVALIADOR">Avaliador (Acesso a Avaliações)</option>
+                <option value="REITORIA">Reitoria (Gestão Macro)</option>
+                <option value="ADMIN">Administrador (Acesso Total)</option>
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button className="bg-[#2F6B38] text-white hover:bg-[#1a4122]" onClick={handleSaveRole}>
+              Salvar Perfil
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="shadow-xl">
         <CardHeader className="bg-gray-50 border-b">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Especialistas Cadastrados</CardTitle>
-              <CardDescription>Total de {filteredEspecialistas.length} especialista(s)</CardDescription>
+              <CardTitle>Servidores Cadastrados</CardTitle>
+              <CardDescription>Total de {filteredServidores.length} servidor(es)</CardDescription>
             </div>
             <div className="relative w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 type="text"
-                placeholder="Buscar por nome, campus, especialidades..."
+                placeholder="Buscar por nome, campus, SIAPE, especialidades..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -421,48 +553,56 @@ export function EspecialistasPage() {
             <TableHeader>
               <TableRow className="bg-gray-50 hover:bg-gray-50">
                 <TableHead className="font-bold">Nome / Titulação</TableHead>
-                <TableHead className="font-bold">Campus</TableHead>
+                <TableHead className="font-bold">Campus / Setor</TableHead>
                 <TableHead className="font-bold">Especialidades</TableHead>
                 <TableHead className="font-bold">Contato</TableHead>
-                <TableHead className="font-bold text-center">Projetos Ativos</TableHead>
+                <TableHead className="font-bold text-center">Perfil</TableHead>
                 <TableHead className="font-bold text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEspecialistas.map((especialista) => (
-                <TableRow key={especialista.id} className="hover:bg-gray-50">
+              {filteredServidores.map((servidor) => (
+                <TableRow key={servidor.id} className="hover:bg-gray-50">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="w-10 h-10 flex-shrink-0">
                         <AvatarFallback className="bg-gradient-to-br from-[#2F6B38] to-[#1a4122] text-white font-bold text-sm">
-                          {getInitials(especialista.nome)}
+                          {getInitials(servidor.nome_completo)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-gray-900">{especialista.nome}</p>
+                        <p className="font-semibold text-gray-900">{servidor.nome_completo}</p>
                         <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Award className="w-3 h-3" />
-                          {especialista.titulacao}
+                          {servidor.titulacao}
                         </div>
+                        <p className="text-xs text-gray-400">SIAPE: {servidor.siape}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="font-semibold">
-                      {especialista.campus}
+                      {servidor.campus}
                     </Badge>
+                    <p className="text-xs text-gray-500 mt-1">{servidor.setor}</p>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {especialista.especialidades.split(",").slice(0, 2).map((esp, idx) => (
-                        <Badge key={idx} className="bg-[#2F6B38]/10 text-[#2F6B38] border-0 text-xs">
-                          {esp.trim()}
-                        </Badge>
-                      ))}
-                      {especialista.especialidades.split(",").length > 2 && (
-                        <Badge className="bg-[#2F6B38]/10 text-[#2F6B38] border-0 text-xs">
-                          +{especialista.especialidades.split(",").length - 2}
-                        </Badge>
+                      {servidor.especialidades ? (
+                        <>
+                          {servidor.especialidades.split(",").slice(0, 2).map((esp, idx) => (
+                            <Badge key={idx} className="bg-[#2F6B38]/10 text-[#2F6B38] border-0 text-xs">
+                              {esp.trim()}
+                            </Badge>
+                          ))}
+                          {servidor.especialidades.split(",").length > 2 && (
+                            <Badge className="bg-[#2F6B38]/10 text-[#2F6B38] border-0 text-xs">
+                              +{servidor.especialidades.split(",").length - 2}
+                            </Badge>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
                       )}
                     </div>
                   </TableCell>
@@ -470,40 +610,56 @@ export function EspecialistasPage() {
                     <div className="text-xs space-y-1">
                       <div className="flex items-center gap-1 text-gray-700">
                         <Mail className="w-3 h-3 text-gray-400" />
-                        {especialista.email}
+                        {servidor.email}
                       </div>
                       <div className="flex items-center gap-1 text-gray-600">
                         <Phone className="w-3 h-3 text-gray-400" />
-                        {especialista.telefone}
+                        {servidor.telefone || "—"}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="text-xl font-bold text-[#2F6B38]">{especialista.projetosAtivos}</span>
+                    <Badge variant="outline" className={`font-bold ${getRoleBadge(servidor.role)}`}>
+                      {servidor.role || "SERVIDOR"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleView(especialista)}
+                        onClick={() => handleView(servidor)}
                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        title="Visualizar"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEdit(especialista)}
+                        onClick={() => handleEdit(servidor)}
                         className="text-[#2F6B38] hover:text-[#1a4122] hover:bg-green-50"
+                        title="Editar"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenRoleDialog(servidor)}
+                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                          title="Alterar Perfil"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(especialista.id)}
+                        onClick={() => handleDelete(servidor.id)}
                         className="text-[#ED1C24] hover:text-red-700 hover:bg-red-50"
+                        title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
