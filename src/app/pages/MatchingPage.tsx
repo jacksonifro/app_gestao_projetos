@@ -179,6 +179,7 @@ export function MatchingPage() {
     }).eq('id', selectedProjetoId);
     
     if (error) {
+      console.error("Erro do Supabase ao vincular recursos:", error);
       modalErro("Erro ao vincular recursos.");
       return;
     }
@@ -719,14 +720,14 @@ export function MatchingPage() {
 
                   <div className="space-y-2">
                     <Label className="font-semibold text-gray-900">Polo/Câmpus Executor *</Label>
-                    <Select value={selectedFinanciamento} onValueChange={setSelectedFinanciamento}>
+                    <Select value={selectedCampus} onValueChange={setSelectedCampus}>
                       <SelectTrigger className="h-12 bg-gray-50 border-gray-300">
                         <SelectValue placeholder="--- Selecione um Campus ---" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="jiparana">Câmpus Ji-Paraná (Automação Industrial)</SelectItem>
-                        <SelectItem value="pvelho">Câmpus Porto Velho Calama (Informática)</SelectItem>
-                        <SelectItem value="vilhena">Câmpus Vilhena (Mecânica)</SelectItem>
+                        {campi.map(c => (
+                          <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
