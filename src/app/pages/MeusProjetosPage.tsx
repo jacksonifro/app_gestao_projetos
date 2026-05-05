@@ -5,14 +5,15 @@ import {
   ChevronDown,
   Clock,
   DollarSign,
-  Download,
   FileText,
   FolderOpen,
   Plus,
   TrendingUp,
   PlayCircle,
-  ClipboardList
+  BarChart3,
+  Eye
 } from "lucide-react";
+import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -21,11 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
-import { formatCurrencyInput, parseCurrencyToNumber } from "../../lib/masks";
 import { modalSucesso, modalErro, modalConfirmacao } from "../../lib/alerts";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 
 const metricasIniciais = [
   {
@@ -58,18 +55,12 @@ const metricasIniciais = [
   },
 ];
 
-
-
 export function MeusProjetosPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projetos, setProjetos] = useState<any[]>([]);
   const [metasAPI, setMetasAPI] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Novos states para o modal de Preencher Resultados
-  const [isResultadosOpen, setIsResultadosOpen] = useState(false);
-  const [projetoEditando, setProjetoEditando] = useState<any>(null);
-  const [metasEditando, setMetasEditando] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -120,34 +111,10 @@ export function MeusProjetosPage() {
     const emExecucao = projetos.filter(p => p.status === 'EM EXECUÇÃO').length;
 
     return [
-      {
-        titulo: "Orçamento Total",
-        valor: formatCurrency(orcamentoTotal),
-        subtitulo: "Nas suas demandas",
-        cor: "border-l-[#2F6B38]",
-        icone: DollarSign,
-      },
-      {
-        titulo: "Projetos Aprovados",
-        valor: aprovados.toString(),
-        subtitulo: "Aguardando execução",
-        cor: "border-l-[#2F6B38]",
-        icone: TrendingUp,
-      },
-      {
-        titulo: "Em Execução",
-        valor: emExecucao.toString(),
-        subtitulo: "Em fase de desenvolvimento",
-        cor: "border-l-blue-500",
-        icone: PlayCircle,
-      },
-      {
-        titulo: "Demandas em Análise",
-        valor: emAnalise.toString(),
-        subtitulo: "Aguardando avaliação técnica",
-        cor: "border-l-yellow-500",
-        icone: Clock,
-      },
+      { titulo: "Orçamento Total", valor: formatCurrency(orcamentoTotal), subtitulo: "Nas suas demandas", cor: "border-l-[#2F6B38]", icone: DollarSign },
+      { titulo: "Projetos Aprovados", valor: aprovados.toString(), subtitulo: "Aguardando execução", cor: "border-l-[#2F6B38]", icone: TrendingUp },
+      { titulo: "Em Execução", valor: emExecucao.toString(), subtitulo: "Em fase de desenvolvimento", cor: "border-l-blue-500", icone: PlayCircle },
+      { titulo: "Demandas em Análise", valor: emAnalise.toString(), subtitulo: "Aguardando avaliação técnica", cor: "border-l-yellow-500", icone: Clock },
     ];
   };
 
@@ -167,34 +134,6 @@ export function MeusProjetosPage() {
         modalSucesso("Projeto iniciado com sucesso!");
         setProjetos(projetos.map(p => p.id === projeto.id ? { ...p, status: 'EM EXECUÇÃO' } : p));
       }
-    }
-  };
-
-  const handleOpenResultados = (projeto: any) => {
-    const projMetas = metasAPI.filter(m => m.projeto_id === projeto.id);
-    setProjetoEditando(projeto);
-    setMetasEditando(projMetas);
-    setIsResultadosOpen(true);
-  };
-
-  const handleSalvarResultados = async () => {
-    let hasError = false;
-    for (const m of metasEditando) {
-      const { error } = await supabase.from('metas')
-        .update({ custo_realizado: m.custo_realizado, status: m.status })
-        .eq('id', m.id);
-      if (error) hasError = true;
-    }
-    
-    if (hasError) {
-      modalErro("Alguns resultados falharam ao salvar.");
-    } else {
-      modalSucesso("Resultados salvos com sucesso!");
-      setIsResultadosOpen(false);
-      setMetasAPI(metasAPI.map(mAPI => {
-        const edited = metasEditando.find(me => me.id === mAPI.id);
-        return edited ? { ...mAPI, custo_realizado: edited.custo_realizado, status: edited.status } : mAPI;
-      }));
     }
   };
 
@@ -267,15 +206,14 @@ export function MeusProjetosPage() {
                         </Button>
                       )}
                       {projeto.status === 'EM EXECUÇÃO' && (
-                        <Button onClick={() => handleOpenResultados(projeto)} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold w-full">
-                          <ClipboardList className="w-4 h-4 mr-2" />
-                          Preencher Resultados
+                        <Button onClick={() => navigate('/acompanhamento')} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold w-full">
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Acompanhamento
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" className="text-[#2F6B38] border-[#2F6B38] hover:bg-[#2F6B38]/5 w-full">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Ver Plano Completo
-                        <ChevronDown className="w-4 h-4 ml-1" />
+                      <Button variant="outline" size="sm" className="text-[#2F6B38] border-[#2F6B38] hover:bg-[#2F6B38]/5 w-full" onClick={() => navigate(`/projeto/${projeto.id}`)}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Visualização
                       </Button>
                     </div>
                   </div>
@@ -288,10 +226,6 @@ export function MeusProjetosPage() {
                     <FolderOpen className="w-6 h-6 text-[#2F6B38]" />
                     Detalhamento das Metas
                   </h3>
-                  <Button variant="outline" size="sm" className="font-semibold">
-                    <Download className="w-4 h-4 mr-2" />
-                    Exportar
-                  </Button>
                 </div>
       
                 <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -335,47 +269,6 @@ export function MeusProjetosPage() {
           );
         })
       )}
-
-      <Dialog open={isResultadosOpen} onOpenChange={setIsResultadosOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Preencher Resultados: {projetoEditando?.titulo}</DialogTitle>
-          </DialogHeader>
-          <div className="mt-4 space-y-4">
-            {metasEditando.map((meta, index) => (
-              <Card key={meta.id} className="p-5 bg-gray-50 border-gray-200">
-                <h4 className="font-bold text-gray-900 mb-4">{index + 1}. {meta.titulo}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label className="mb-2 block">Status da Meta</Label>
-                    <select 
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={meta.status}
-                      onChange={(e) => setMetasEditando(metasEditando.map(m => m.id === meta.id ? { ...m, status: e.target.value } : m))}
-                    >
-                      <option value="AGENDADO">Agendado</option>
-                      <option value="PROCESSANDO">Em Andamento</option>
-                      <option value="CONCLUÍDO">Concluído</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="mb-2 block">Custo Realizado (R$)</Label>
-                    <Input 
-                      type="number" 
-                      value={formatCurrencyInput(((meta.custo_realizado || 0) * 100).toFixed(0))}
-                      onChange={(e) => setMetasEditando(metasEditando.map(m => m.id === meta.id ? { ...m, custo_realizado: parseCurrencyToNumber(e.target.value) } : m))}
-                    />
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" onClick={() => setIsResultadosOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSalvarResultados} className="bg-[#2F6B38] text-white">Salvar Resultados</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

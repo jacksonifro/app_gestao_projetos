@@ -15,6 +15,7 @@ import { ComissaoPage } from "./pages/ComissaoPage";
 import { AvaliacoesPage } from "./pages/AvaliacoesPage";
 import { MeusProjetosPage } from "./pages/MeusProjetosPage";
 import { AcompanhamentoPage } from "./pages/AcompanhamentoPage";
+import { VisualizacaoProjetoPage } from "./pages/VisualizacaoProjetoPage";
 
 function RootRedirect() {
   const { session, loading } = useAuth();
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
       { path: "projetos", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><ProjetosPage /></ProtectedRoute> },
       { path: "meus-projetos", element: <MeusProjetosPage /> },
       { path: "acompanhamento", element: <AcompanhamentoPage /> },
+      { path: "projeto/:id", element: <VisualizacaoProjetoPage /> },
       { path: "avaliacoes", element: <ProtectedRoute allowedRoles={['AVALIADOR', 'ADMIN']}><AvaliacoesPage /></ProtectedRoute> },
       { path: "cadastros/financiamento", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><FinanciamentoPage /></ProtectedRoute> },
       { path: "cadastros/campus", element: <ProtectedRoute allowedRoles={['REITORIA', 'ADMIN']}><CampusPage /></ProtectedRoute> },
