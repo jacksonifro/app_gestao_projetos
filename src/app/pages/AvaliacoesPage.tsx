@@ -44,7 +44,7 @@ interface Demanda {
 }
 
 export function AvaliacoesPage() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [demandas, setDemandas] = useState<Demanda[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [demandaSelecionada, setDemandaSelecionada] = useState<Demanda | null>(null);
@@ -59,11 +59,34 @@ export function AvaliacoesPage() {
   }, [user]);
 
   const fetchDemandas = async () => {
-    // Buscar projetos em análise
-    const { data: projetos, error: errorProjetos } = await supabase
+    if (!user) return;
+
+    // Buscar comissões onde o usuário é membro
+    const { data: comissoesData } = await supabase
+      .from("comissao_especialistas")
+      .select("comissao_id")
+      .eq("especialista_id", user.id);
+
+    const minhasComissoes = comissoesData ? comissoesData.map(c => c.comissao_id) : [];
+
+    if (minhasComissoes.length === 0 && userRole !== "ADMIN" && userRole !== "REITORIA") {
+      setDemandas([]);
+      return;
+    }
+
+    // Buscar projetos em análise vinculados a uma comissão
+    let query = supabase
       .from("projetos")
       .select("*")
-      .eq("status", "EM ANÁLISE");
+      .eq("status", "EM ANÁLISE")
+      .not("comissao_id", "is", null);
+
+    // Se não for admin, vê só os que ele está na comissão
+    if (userRole !== "ADMIN" && userRole !== "REITORIA") {
+      query = query.in("comissao_id", minhasComissoes);
+    }
+
+    const { data: projetos, error: errorProjetos } = await query;
 
     if (errorProjetos || !projetos) return;
 

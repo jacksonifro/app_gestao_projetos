@@ -34,3 +34,13 @@ export const parseCurrencyToNumber = (value: string): number => {
   if (v === "") return 0;
   return parseInt(v, 10) / 100;
 };
+
+export const formatCNPJ = (value: string) => {
+  if (!value) return "";
+  let v = value.replace(/\D/g, "");
+  v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+  v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+  v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+  v = v.replace(/(\d{4})(\d)/, "$1-$2");
+  return v.substring(0, 18);
+};

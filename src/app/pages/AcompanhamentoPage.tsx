@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BarChart3, CheckCircle, Clock, AlertTriangle, Target, ExternalLink, Save } from "lucide-react";
+import { BarChart3, CheckCircle, Clock, AlertTriangle, Target, ExternalLink, Save, Users, Plus, Trash2, Shield } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -20,7 +20,11 @@ export function AcompanhamentoPage() {
   const [selectedProjetoId, setSelectedProjetoId] = useState<string>("");
   const [metas, setMetas] = useState<any[]>([]);
   const [historico, setHistorico] = useState<any[]>([]);
+  const [equipe, setEquipe] = useState<any[]>([]);
+  const [servidores, setServidores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("metas");
+  const [newMembro, setNewMembro] = useState({ servidor_id: "", funcao: "" });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMeta, setEditingMeta] = useState<any>(null);
@@ -35,14 +39,53 @@ export function AcompanhamentoPage() {
 
   useEffect(() => {
     fetchProjetos();
+    fetchServidores();
   }, [user]);
 
   useEffect(() => {
     if (selectedProjetoId) {
       fetchMetas();
       fetchHistorico();
+      fetchEquipe();
     }
   }, [selectedProjetoId]);
+
+  const fetchServidores = async () => {
+    const { data } = await supabase.from("perfis").select("id, nome_completo, siape").order("nome_completo");
+    if (data) setServidores(data);
+  };
+
+  const fetchEquipe = async () => {
+    const { data } = await supabase
+      .from("projeto_equipe")
+      .select("*, perfis(nome_completo, siape)")
+      .eq("projeto_id", selectedProjetoId)
+      .order("created_at");
+    if (data) setEquipe(data);
+  };
+
+  const handleAddMembro = async () => {
+    if (!newMembro.servidor_id || !newMembro.funcao) {
+      modalErro("Selecione o servidor e informe a função.");
+      return;
+    }
+    const { error } = await supabase.from("projeto_equipe").insert([{
+      projeto_id: selectedProjetoId,
+      servidor_id: newMembro.servidor_id,
+      funcao: newMembro.funcao
+    }]);
+    if (error) { modalErro("Erro ao vincular membro: " + error.message); return; }
+    modalSucesso("Membro vinculado com sucesso!");
+    setNewMembro({ servidor_id: "", funcao: "" });
+    fetchEquipe();
+  };
+
+  const handleRemoveMembro = async (id: string) => {
+    if (!confirm("Remover este membro da equipe?")) return;
+    const { error } = await supabase.from("projeto_equipe").delete().eq("id", id);
+    if (error) { modalErro("Erro ao remover: " + error.message); return; }
+    fetchEquipe();
+  };
 
   const fetchProjetos = async () => {
     if (!user) return;
@@ -189,68 +232,159 @@ export function AcompanhamentoPage() {
             </Card>
           </div>
 
-          {/* Lista de Metas */}
-          <Card className="shadow-xl mb-8">
-            <CardHeader className="bg-gray-50 border-b">
-              <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-[#2F6B38]" />Metas do Projeto</CardTitle>
-              <CardDescription>Registre o progresso de cada meta — clique em "Registrar Progresso"</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 divide-y">
-              {metas.length === 0 ? (
-                <div className="p-10 text-center text-gray-500">Nenhuma meta cadastrada para este projeto.</div>
-              ) : metas.map((meta, idx) => {
-                const badge = getStatusBadge(meta);
-                const Icon = badge.icon;
-                return (
-                  <div key={meta.id} className="p-5 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="w-8 h-8 bg-[#2F6B38] text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
-                            {String(idx + 1).padStart(2, "0")}
-                          </span>
-                          <h4 className="font-bold text-gray-900 text-lg">{meta.titulo}</h4>
-                          <Badge variant="outline" className={`${badge.class} font-bold`}>
-                            <Icon className="w-3 h-3 mr-1" />{badge.label}
-                          </Badge>
-                        </div>
-                        {meta.descricao && <p className="text-sm text-gray-600 ml-11 mb-3">{meta.descricao}</p>}
+          {/* Tabs Navigation */}
+          <div className="flex items-center gap-4 border-b border-gray-200 mb-6">
+            <button
+              onClick={() => setActiveTab("metas")}
+              className={`pb-3 px-4 font-bold text-sm transition-colors border-b-4 ${activeTab === "metas" ? "border-[#2F6B38] text-[#2F6B38]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            >
+              <Target className="w-4 h-4 inline mr-2" />Metas e Execução
+            </button>
+            <button
+              onClick={() => setActiveTab("equipe")}
+              className={`pb-3 px-4 font-bold text-sm transition-colors border-b-4 ${activeTab === "equipe" ? "border-[#2F6B38] text-[#2F6B38]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            >
+              <Users className="w-4 h-4 inline mr-2" />Equipe do Projeto (Bolsistas)
+            </button>
+          </div>
 
-                        <div className="ml-11 flex items-center gap-6 text-sm">
-                          <div>
-                            <span className="text-gray-500">Previsão: </span>
-                            <span className="font-semibold">{formatDate(meta.previsao_conclusao)}</span>
+          {activeTab === "metas" && (
+            <Card className="shadow-xl mb-8">
+              <CardHeader className="bg-gray-50 border-b">
+                <CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-[#2F6B38]" />Metas do Projeto</CardTitle>
+                <CardDescription>Registre o progresso de cada meta — clique em "Registrar Progresso"</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 divide-y">
+                {metas.length === 0 ? (
+                  <div className="p-10 text-center text-gray-500">Nenhuma meta cadastrada para este projeto.</div>
+                ) : metas.map((meta, idx) => {
+                  const badge = getStatusBadge(meta);
+                  const Icon = badge.icon;
+                  return (
+                    <div key={meta.id} className="p-5 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="w-8 h-8 bg-[#2F6B38] text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
+                              {String(idx + 1).padStart(2, "0")}
+                            </span>
+                            <h4 className="font-bold text-gray-900 text-lg">{meta.titulo}</h4>
+                            <Badge variant="outline" className={`${badge.class} font-bold`}>
+                              <Icon className="w-3 h-3 mr-1" />{badge.label}
+                            </Badge>
                           </div>
-                          <div>
-                            <span className="text-gray-500">Concluído em: </span>
-                            <span className="font-semibold">{formatDate(meta.data_conclusao)}</span>
+                          {meta.descricao && <p className="text-sm text-gray-600 ml-11 mb-3">{meta.descricao}</p>}
+
+                          <div className="ml-11 flex items-center gap-6 text-sm">
+                            <div>
+                              <span className="text-gray-500">Previsão: </span>
+                              <span className="font-semibold">{formatDate(meta.previsao_conclusao)}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Concluído em: </span>
+                              <span className="font-semibold">{formatDate(meta.data_conclusao)}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Custo: </span>
+                              <span className="font-semibold">{formatCurrency(meta.custo_realizado)} / {formatCurrency(meta.custo_estimado)}</span>
+                            </div>
+                            {meta.link_comprovacao && (
+                              <a href={meta.link_comprovacao} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold">
+                                <ExternalLink className="w-3 h-3" />Comprovação
+                              </a>
+                            )}
                           </div>
-                          <div>
-                            <span className="text-gray-500">Custo: </span>
-                            <span className="font-semibold">{formatCurrency(meta.custo_realizado)} / {formatCurrency(meta.custo_estimado)}</span>
+
+                          <div className="ml-11 mt-3 flex items-center gap-3">
+                            <Progress value={meta.percentual || 0} className="h-3 flex-1 max-w-xs" />
+                            <span className="text-sm font-black text-[#2F6B38]">{meta.percentual || 0}%</span>
                           </div>
-                          {meta.link_comprovacao && (
-                            <a href={meta.link_comprovacao} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold">
-                              <ExternalLink className="w-3 h-3" />Comprovação
-                            </a>
-                          )}
                         </div>
 
-                        <div className="ml-11 mt-3 flex items-center gap-3">
-                          <Progress value={meta.percentual || 0} className="h-3 flex-1 max-w-xs" />
-                          <span className="text-sm font-black text-[#2F6B38]">{meta.percentual || 0}%</span>
-                        </div>
+                        <Button size="sm" className="bg-[#2F6B38] hover:bg-[#1a4122] flex-shrink-0" onClick={() => handleOpenModal(meta)}>
+                          <Save className="w-4 h-4 mr-2" />Registrar Progresso
+                        </Button>
                       </div>
-
-                      <Button size="sm" className="bg-[#2F6B38] hover:bg-[#1a4122] flex-shrink-0" onClick={() => handleOpenModal(meta)}>
-                        <Save className="w-4 h-4 mr-2" />Registrar Progresso
-                      </Button>
                     </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "equipe" && (
+            <Card className="shadow-xl mb-8">
+              <CardHeader className="bg-gray-50 border-b">
+                <CardTitle className="flex items-center gap-2"><Users className="w-5 h-5 text-[#2F6B38]" />Equipe e Bolsistas vinculados</CardTitle>
+                <CardDescription>Gerencie as pessoas que estão executando e recebendo bolsas neste projeto.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-end gap-4 mb-8">
+                  <div className="flex-1 space-y-2">
+                    <Label>Servidor a Vincular</Label>
+                    <select
+                      className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                      value={newMembro.servidor_id}
+                      onChange={(e) => setNewMembro({ ...newMembro, servidor_id: e.target.value })}
+                    >
+                      <option value="">-- Selecione o Servidor --</option>
+                      {servidores.map(s => <option key={s.id} value={s.id}>{s.nome_completo} {s.siape ? `(SIAPE: ${s.siape})` : ''}</option>)}
+                    </select>
                   </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+                  <div className="flex-1 space-y-2">
+                    <Label>Função no Projeto (Ex: Pesquisador, Bolsista, etc)</Label>
+                    <Input 
+                      placeholder="Qual a função deste servidor no projeto?" 
+                      value={newMembro.funcao} 
+                      onChange={(e) => setNewMembro({ ...newMembro, funcao: e.target.value })} 
+                    />
+                  </div>
+                  <Button className="bg-[#2F6B38] hover:bg-[#1a4122] h-10 px-6" onClick={handleAddMembro}>
+                    <Plus className="w-4 h-4 mr-2" />Vincular
+                  </Button>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-100 text-gray-700 font-bold uppercase text-xs">
+                      <tr>
+                        <th className="px-6 py-3">Nome do Servidor</th>
+                        <th className="px-6 py-3">Função no Projeto</th>
+                        <th className="px-6 py-3 text-center">Data do Vínculo</th>
+                        <th className="px-6 py-3 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {equipe.length === 0 ? (
+                        <tr><td colSpan={4} className="text-center py-8 text-gray-500">Nenhum membro vinculado a este projeto ainda.</td></tr>
+                      ) : equipe.map((eq) => (
+                        <tr key={eq.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 font-semibold text-gray-900">
+                            {eq.perfis?.nome_completo}
+                            <span className="block text-xs text-gray-500 font-normal">SIAPE: {eq.perfis?.siape || "—"}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Badge className={`${eq.funcao === 'Coordenador-Geral' ? 'bg-[#2F6B38]' : 'bg-blue-600'} text-white`}>
+                              {eq.funcao === 'Coordenador-Geral' && <Shield className="w-3 h-3 mr-1 inline" />}
+                              {eq.funcao}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 text-center text-gray-600">{new Date(eq.created_at).toLocaleDateString("pt-BR")}</td>
+                          <td className="px-6 py-4 text-center">
+                            {eq.funcao !== 'Coordenador-Geral' && (
+                              <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleRemoveMembro(eq.id)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Histórico */}
           {historico.length > 0 && (

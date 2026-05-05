@@ -131,16 +131,7 @@ const ORCAMENTO_ITEMS = [
   "Máquinas e Equipamentos",
   "Despesas Operacionais e Administrativas (%)",
 ];
-const CAMPUS_DATA: Record<string, { nome: string; cnpj: string; endereco: string }> = {
-  jiparana: { nome: "Campus Ji-Paraná", cnpj: "10.817.343/0002-19", endereco: "Rua Rio Amazonas, 351 – Jardim dos Migrantes" },
-  pvelho: { nome: "Campus Porto Velho Calama", cnpj: "10.817.343/0004-80", endereco: "Rua Calama, 4985 – Caladinho" },
-  vilhena: { nome: "Campus Vilhena", cnpj: "10.817.343/0003-00", endereco: "Rodovia BR 174, km 3" },
-  ariquemes: { nome: "Campus Ariquemes", cnpj: "10.817.343/0005-61", endereco: "Rodovia RO-257, km 04" },
-  cacoal: { nome: "Campus Cacoal", cnpj: "10.817.343/0006-42", endereco: "Rua IFRO, nº 103 – Setor Institucional" },
-  colorado: { nome: "Campus Colorado do Oeste", cnpj: "10.817.343/0007-23", endereco: "Rodovia BR 435, km 63 – Zona Rural" },
-  guajara: { nome: "Campus Guajará-Mirim", cnpj: "10.817.343/0009-54", endereco: "Av. 15 de novembro, 4849" },
-  pvz: { nome: "Campus Porto Velho Zona Norte", cnpj: "10.817.343/0011-89", endereco: "Av. Governador Jorge Teixeira, 3146" },
-};
+
 
 const RUBRICAS = [
   { code: "339018", label: "339018 – Auxílio financeiro a estudante" },
@@ -183,16 +174,31 @@ const formatMoeda = (n: number) =>
 // ─── Componente Principal ─────────────────────────────────────────────────────
 
 export function DemandasPage() {
-  const { user } = useAuth();
+  const { user, perfil } = useAuth();
   const [saving, setSaving] = useState(false);
   const [currentTab, setCurrentTab] = useState("projeto");
   const [ultimasDemandas, setUltimasDemandas] = useState<any[]>([]);
 
+  const [campiList, setCampiList] = useState<any[]>([]);
+
   useEffect(() => {
+    fetchCampi();
     if (user) {
       fetchUltimasDemandas();
     }
-  }, [user]);
+    if (perfil) {
+      setCoordGeralNome(prev => prev || perfil.nome_completo || "");
+      setCoordGeralEmail(prev => prev || perfil.email || "");
+      if (perfil.telefone) {
+        setCoordGeralTelefone(prev => prev || formatTelefone(perfil.telefone));
+      }
+    }
+  }, [user, perfil]);
+
+  const fetchCampi = async () => {
+    const { data } = await supabase.from("campus").select("*").order("nome");
+    if (data) setCampiList(data);
+  };
 
   const fetchUltimasDemandas = async () => {
     const { data, error } = await supabase
@@ -203,15 +209,28 @@ export function DemandasPage() {
       .limit(3);
       
     if (data) {
-      setUltimasDemandas(data.map(d => ({
-        id: d.id,
-        titulo: d.titulo,
-        campus: CAMPUS_DATA[d.campus_key]?.nome || d.campus_key,
-        status: d.status,
-        statusColor: d.status === 'APROVADO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-      })));
+      setUltimasDemandas(data.map(d => {
+        // Will try to match from campiList if available (async race might happen, but usually fine for simple dashboard)
+        return {
+          id: d.id,
+          titulo: d.titulo,
+          campus: d.campus_key,
+          status: d.status,
+          statusColor: d.status === 'APROVADO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+        };
+      }));
     }
   };
+
+  // Atualizar nomes dos campus na lista de ultimas demandas após carregar campusList
+  useEffect(() => {
+    if (campiList.length > 0 && ultimasDemandas.length > 0) {
+      setUltimasDemandas(prev => prev.map(d => {
+        const c = campiList.find(campus => campus.id.toString() === d.campus);
+        return { ...d, campus: c ? c.nome : d.campus };
+      }));
+    }
+  }, [campiList]);
 
   // ── Aba 1 ─────────────────────────────────────────────���────────────────────
 
@@ -220,7 +239,6 @@ export function DemandasPage() {
   const [indicadoresPDI, setIndicadoresPDI] = useState("");
   const [objetivosAtendidosPDI, setObjetivosAtendidosPDI] = useState("");
   const [campusKey, setCampusKey] = useState("");
-  const [campusTelefone, setCampusTelefone] = useState("");
   const [coordGeralNome, setCoordGeralNome] = useState("");
   const [coordGeralEmail, setCoordGeralEmail] = useState("");
   const [coordGeralTelefone, setCoordGeralTelefone] = useState("");
@@ -278,13 +296,6 @@ export function DemandasPage() {
   // ── Aba 2 – Plano de Trabalho ──────────────────────────────────────────────
 
   // Seção 1 – Instituição Responsável (compartilha dados do campus da Aba 1)
-  const [instEndereco, setInstEndereco] = useState("");
-  const [instBairro, setInstBairro] = useState("");
-  const [instCidadeEstadoCep, setInstCidadeEstadoCep] = useState("");
-  const [instUnidadeExecutora, setInstUnidadeExecutora] = useState("");
-  const [instEmail, setInstEmail] = useState("");
-  const [instSite, setInstSite] = useState("");
-  const [instTelCampus, setInstTelCampus] = useState("");
   const [instCpf, setInstCpf] = useState("");
   const [instMatricula, setInstMatricula] = useState("");
 
@@ -336,7 +347,7 @@ export function DemandasPage() {
 
   // ── Cálculos de totais ────────────────────────────────────────────────────
 
-  const campusInfo = campusKey ? CAMPUS_DATA[campusKey] : null;
+  const campusInfo = campusKey ? campiList.find(c => c.id.toString() === campusKey) : null;
 
   const calcTotalMeta = (meta: MetaPlano) =>
     meta.etapas.reduce((acc, e) => acc + parseMoeda(e.valor), 0);
@@ -482,9 +493,15 @@ export function DemandasPage() {
   const updateDesembolso = (id: number, field: keyof DesembolsoItem, value: string) =>
     setDesembolsos(desembolsos.map(d => d.id === id ? { ...d, [field]: value } : d));
 
-  const handleSubmit = async () => {
-    if (!tituloProjeto || !campusKey || !coordGeralNome) {
-      modalAlerta("Preencha os campos obrigatórios na aba Projeto!");
+  const handleSubmit = async (isDraft = false) => {
+    if (!tituloProjeto) {
+      modalAlerta("O Título do Projeto é obrigatório!");
+      setCurrentTab("projeto");
+      return;
+    }
+
+    if (!isDraft && (!campusKey || !coordGeralNome)) {
+      modalAlerta("Preencha os campos obrigatórios na aba Projeto para submeter!");
       setCurrentTab("projeto");
       return;
     }
@@ -496,6 +513,7 @@ export function DemandasPage() {
     setSaving(true);
     const { data, error } = await supabase.from("projetos").insert([{
       user_id: user.id,
+      status: isDraft ? "RASCUNHO" : "PENDENTE DE COMISSÃO",
       titulo: tituloProjeto,
       acao_estrategica: acaoEstrategica,
       campus_key: campusKey,
@@ -518,7 +536,7 @@ export function DemandasPage() {
       
       indicadores_pdi: indicadoresPDI,
       objetivos_atendidos_pdi: objetivosAtendidosPDI,
-      campus_telefone: campusTelefone,
+      campus_telefone: campusInfo ? campusInfo.telefone : "",
       coord_exec_nome: coordExecNome,
       coord_exec_email: coordExecEmail,
       coord_exec_telefone: coordExecTelefone,
@@ -544,7 +562,7 @@ export function DemandasPage() {
       referencias: referencias,
       orcamento_resumo: orcamentoValues,
       
-      plano_instituicao: { instEndereco, instBairro, instCidadeEstadoCep, instUnidadeExecutora, instEmail, instSite, instTelCampus, instCpf, instMatricula },
+      plano_instituicao: { instCpf, instMatricula },
       plano_fundacao: hasFundacao ? { fundNome, fundSigla, fundCnpj, fundEndereco, fundBairro, fundCidadeEstado, fundCep, fundEmail, fundSite, fundTelefone, fundResponsavel, fundCargo, fundCpf } : {},
       plano_participante: hasInstPart ? { partNome, partSigla, partCnpj, partEndereco, partBairro, partCidadeEstado, partCep, partEmail, partSite, partTelefone, partResponsavel, partCargo, partCpf } : {},
       cronograma_desembolso: desembolsos
@@ -591,7 +609,7 @@ export function DemandasPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="container mx-auto px-6 py-10 max-w-7xl">
+    <div className="container mx-auto px-6 py-10 max-w-[90rem]">
       {/* Banner */}
       <div className="bg-gradient-to-r from-[#2F6B38] to-[#1a4122] p-10 rounded-2xl text-white shadow-xl mb-8">
         <div className="flex items-start gap-4">
@@ -674,30 +692,25 @@ export function DemandasPage() {
                     <Select value={campusKey} onValueChange={setCampusKey}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="Selecione o campus" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="jiparana">Câmpus Ji-Paraná</SelectItem>
-                        <SelectItem value="pvelho">Câmpus Porto Velho Calama</SelectItem>
-                        <SelectItem value="vilhena">Câmpus Vilhena</SelectItem>
-                        <SelectItem value="ariquemes">Câmpus Ariquemes</SelectItem>
-                        <SelectItem value="cacoal">Câmpus Cacoal</SelectItem>
-                        <SelectItem value="colorado">Câmpus Colorado do Oeste</SelectItem>
-                        <SelectItem value="guajara">Câmpus Guajará-Mirim</SelectItem>
-                        <SelectItem value="pvz">Câmpus Porto Velho Zona Norte</SelectItem>
+                        {campiList.map(c => (
+                          <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   {campusInfo && (
                     <div className="bg-[#2F6B38]/5 border border-[#2F6B38]/20 rounded-lg p-4 grid grid-cols-2 gap-3 text-sm">
-                      <div><span className="font-semibold text-gray-700">Nome/Razão Social: </span><span className="text-gray-600">Instituto Federal de Educação, Ciência e Tecnologia de Rondônia, {campusInfo.nome}</span></div>
-                      <div><span className="font-semibold text-gray-700">Sigla: </span><span className="text-gray-600">IFRO</span></div>
-                      <div><span className="font-semibold text-gray-700">CNPJ: </span><span className="text-gray-600">{campusInfo.cnpj}</span></div>
+                      <div><span className="font-semibold text-gray-700">Nome/Razão Social: </span><span className="text-gray-600">{campusInfo.razao_social || campusInfo.nome}</span></div>
+                      <div><span className="font-semibold text-gray-700">Sigla: </span><span className="text-gray-600">{campusInfo.sigla || "IFRO"}</span></div>
+                      <div><span className="font-semibold text-gray-700">CNPJ: </span><span className="text-gray-600">{campusInfo.cnpj || "-"}</span></div>
                       <div><span className="font-semibold text-gray-700">Natureza Jurídica: </span><span className="text-gray-600">Autarquia Federal</span></div>
-                      <div className="col-span-2"><span className="font-semibold text-gray-700">Endereço: </span><span className="text-gray-600">{campusInfo.endereco}</span></div>
+                      <div><span className="font-semibold text-gray-700">Diretor(a) Geral: </span><span className="text-gray-600">{campusInfo.diretor_geral || "-"}</span></div>
+                      <div><span className="font-semibold text-gray-700">Áreas de Especialização: </span><span className="text-gray-600">{campusInfo.areas_especializacao || "-"}</span></div>
+                      <div><span className="font-semibold text-gray-700">Telefone: </span><span className="text-gray-600">{campusInfo.telefone || "-"}</span></div>
+                      <div><span className="font-semibold text-gray-700">E-mail: </span><span className="text-gray-600">{campusInfo.email || "-"}</span></div>
+                      <div className="col-span-2"><span className="font-semibold text-gray-700">Endereço: </span><span className="text-gray-600">{campusInfo.logradouro ? `${campusInfo.logradouro}, ${campusInfo.numero} - ${campusInfo.bairro}, ${campusInfo.cidade} - ${campusInfo.estado}` : campusInfo.endereco || "-"}</span></div>
                     </div>
                   )}
-                  <div className="space-y-2">
-                    <Label className="font-semibold">Telefone do Campus</Label>
-                    <Input placeholder="(69) XXXX-XXXX" value={campusTelefone} onChange={e => setCampusTelefone(formatTelefone(e.target.value))} className="h-11" />
-                  </div>
                 </div>
               </div>
 
@@ -823,7 +836,7 @@ export function DemandasPage() {
                                 <input type="radio" name={`alinhamento-${idx}`} checked={item.contribuicao === tipo} onChange={() => updateAlinhamento(idx, "contribuicao", tipo)} className="w-4 h-4 accent-[#2F6B38]" />
                               </td>
                             ))}
-                            <td className="p-3"><Input placeholder="Comentário..." value={item.comentario} onChange={e => updateAlinhamento(idx, "comentario", e.target.value)} className="h-8 text-xs" /></td>
+                            <td className="p-3"><Textarea placeholder="Comentário..." value={item.comentario} onChange={e => updateAlinhamento(idx, "comentario", e.target.value)} className="h-8 min-h-[32px] focus:min-h-[80px] text-xs resize-none transition-all" /></td>
                           </tr>
                         ))}
                       </tbody>
@@ -870,7 +883,7 @@ export function DemandasPage() {
                         {partesInteressadas.map((p, idx) => (
                           <tr key={p.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                             <td className="p-2"><Input value={p.parte} onChange={e => updateParteInteressada(p.id, "parte", e.target.value)} className="h-8 text-xs" /></td>
-                            <td className="p-2"><Input value={p.descricao} onChange={e => updateParteInteressada(p.id, "descricao", e.target.value)} className="h-8 text-xs" placeholder="Descreva..." /></td>
+                            <td className="p-2"><Textarea value={p.descricao} onChange={e => updateParteInteressada(p.id, "descricao", e.target.value)} className="h-8 min-h-[32px] focus:min-h-[80px] text-xs resize-none transition-all" placeholder="Descreva..." /></td>
                             <td className="p-2">
                               <Select value={p.nivel} onValueChange={v => updateParteInteressada(p.id, "nivel", v)}>
                                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -881,7 +894,7 @@ export function DemandasPage() {
                                 </SelectContent>
                               </Select>
                             </td>
-                            <td className="p-2"><Input value={p.comentarios} onChange={e => updateParteInteressada(p.id, "comentarios", e.target.value)} className="h-8 text-xs" placeholder="Comentário..." /></td>
+                            <td className="p-2"><Textarea value={p.comentarios} onChange={e => updateParteInteressada(p.id, "comentarios", e.target.value)} className="h-8 min-h-[32px] focus:min-h-[80px] text-xs resize-none transition-all" placeholder="Comentário..." /></td>
                             <td className="p-2 text-center">
                               {partesInteressadas.length > 1 && (<Button onClick={() => removeParteInteressada(p.id)} variant="ghost" size="sm" className="text-red-500 px-2 h-8"><Trash2 className="w-3 h-3" /></Button>)}
                             </td>
@@ -919,7 +932,7 @@ export function DemandasPage() {
                         {Object.keys(premissas).map((key, idx) => (
                           <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                             <td className="p-3 font-medium text-gray-700">{key}</td>
-                            <td className="p-2"><Input placeholder="Descreva..." value={premissas[key]} onChange={e => setPremissas({ ...premissas, [key]: e.target.value })} className="h-9 text-sm" /></td>
+                            <td className="p-2"><Textarea placeholder="Descreva..." value={premissas[key]} onChange={e => setPremissas({ ...premissas, [key]: e.target.value })} className="h-9 min-h-[36px] focus:min-h-[80px] text-sm resize-none transition-all" /></td>
                           </tr>
                         ))}
                       </tbody>
@@ -935,7 +948,7 @@ export function DemandasPage() {
                         {Object.keys(restricoes).map((key, idx) => (
                           <tr key={key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                             <td className="p-3 font-medium text-gray-700">{key}</td>
-                            <td className="p-2"><Input placeholder="Descreva..." value={restricoes[key]} onChange={e => setRestricoes({ ...restricoes, [key]: e.target.value })} className="h-9 text-sm" /></td>
+                            <td className="p-2"><Textarea placeholder="Descreva..." value={restricoes[key]} onChange={e => setRestricoes({ ...restricoes, [key]: e.target.value })} className="h-9 min-h-[36px] focus:min-h-[80px] text-sm resize-none transition-all" /></td>
                           </tr>
                         ))}
                       </tbody>
@@ -974,7 +987,27 @@ export function DemandasPage() {
                       {produtosResultados.map((p, idx) => (
                         <tr key={p.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                           {(["meta", "produto", "servico", "resultado", "prazo"] as const).map(field => (
-                            <td key={field} className="p-2"><Input value={p[field]} onChange={e => updateProduto(p.id, field, e.target.value)} className="h-9 text-xs" placeholder="..." /></td>
+                            <td key={field} className="p-2">
+                              {field === "meta" ? (
+                                <Select value={p[field]} onValueChange={v => updateProduto(p.id, field, v)}>
+                                  <SelectTrigger className="h-9 text-xs">
+                                    <SelectValue placeholder="Selecione..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {objetivosEspecificos.flatMap(obj => obj.metas).filter(m => m.trim() !== "").map((m, i) => (
+                                      <SelectItem key={i} value={m}>{m}</SelectItem>
+                                    ))}
+                                    {objetivosEspecificos.flatMap(obj => obj.metas).filter(m => m.trim() !== "").length === 0 && (
+                                      <SelectItem value="none" disabled>Cadastre uma meta acima</SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              ) : field === "prazo" ? (
+                                <Input value={p[field]} onChange={e => updateProduto(p.id, field, e.target.value)} className="h-9 text-xs" placeholder="..." />
+                              ) : (
+                                <Textarea value={p[field]} onChange={e => updateProduto(p.id, field, e.target.value)} className="h-9 min-h-[36px] focus:min-h-[80px] text-xs resize-none transition-all" placeholder="..." />
+                              )}
+                            </td>
                           ))}
                           <td className="p-2 text-center">
                             {produtosResultados.length > 1 && (<Button onClick={() => removeProduto(p.id)} variant="ghost" size="sm" className="text-red-500 px-2 h-8"><Trash2 className="w-3 h-3" /></Button>)}
@@ -1040,7 +1073,13 @@ export function DemandasPage() {
                       {equipe.map((m, idx) => (
                         <tr key={m.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                           {(["nome", "lattes", "funcao", "quantidade", "perfil", "atribuicoes"] as const).map(field => (
-                            <td key={field} className="p-2"><Input value={m[field]} onChange={e => updateMembro(m.id, field, e.target.value)} className="h-9 text-xs" placeholder={field === "lattes" ? "http://lattes..." : "..."} /></td>
+                            <td key={field} className="p-2">
+                              {field === "perfil" || field === "atribuicoes" ? (
+                                <Textarea value={m[field]} onChange={e => updateMembro(m.id, field, e.target.value)} className="h-9 min-h-[36px] focus:min-h-[80px] text-xs resize-none transition-all" placeholder="..." />
+                              ) : (
+                                <Input value={m[field]} onChange={e => updateMembro(m.id, field, e.target.value)} className="h-9 text-xs" placeholder={field === "lattes" ? "http://lattes..." : "..."} />
+                              )}
+                            </td>
                           ))}
                           <td className="p-2 text-center">
                             {equipe.length > 1 && (<Button onClick={() => removeMembro(m.id)} variant="ghost" size="sm" className="text-red-500 px-2 h-8"><Trash2 className="w-3 h-3" /></Button>)}
@@ -1065,7 +1104,7 @@ export function DemandasPage() {
                         <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                           <td className="p-3 text-center font-semibold text-gray-600">{idx + 1}</td>
                           <td className="p-3 text-gray-700">{item}</td>
-                          <td className="p-2"><Input placeholder="R$ 0,00" value={orcamentoValues[idx]} onChange={e => updateOrcamento(idx, e.target.value)} className="h-9 text-sm" /></td>
+                          <td className="p-2"><Input placeholder="R$ 0,00" value={orcamentoValues[idx]} onChange={e => updateOrcamento(idx, formatCurrencyInput(e.target.value))} className="h-9 text-sm" /></td>
                         </tr>
                       ))}
                       <tr className="bg-[#2F6B38]/10 border-t-2 border-[#2F6B38]">
@@ -1102,13 +1141,27 @@ export function DemandasPage() {
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-[#2F6B38] text-white">
-                      <tr><th className="text-left p-3">Ação</th><th className="text-left p-3">Objetivo Específico</th><th className="text-left p-3 w-40">Previsão de Início</th><th className="text-left p-3 w-40">Previsão de Entrega</th><th className="p-3 w-10"></th></tr>
+                      <tr><th className="text-left p-3">Objetivo Específico</th><th className="text-left p-3">Ação</th><th className="text-left p-3 w-40">Previsão de Início</th><th className="text-left p-3 w-40">Previsão de Entrega</th><th className="p-3 w-10"></th></tr>
                     </thead>
                     <tbody>
                       {cronogramaAba1.map((c, idx) => (
                         <tr key={c.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td className="p-2"><Input value={c.acao} onChange={e => updateCronogramaAba1(c.id, "acao", e.target.value)} className="h-9 text-xs" placeholder="Descreva a ação..." /></td>
-                          <td className="p-2"><Input value={c.objetivoEspecifico} onChange={e => updateCronogramaAba1(c.id, "objetivoEspecifico", e.target.value)} className="h-9 text-xs" placeholder="Objetivo relacionado" /></td>
+                          <td className="p-2">
+                            <Select value={c.objetivoEspecifico} onValueChange={v => updateCronogramaAba1(c.id, "objetivoEspecifico", v)}>
+                              <SelectTrigger className="h-9 text-xs">
+                                <SelectValue placeholder="Selecione o objetivo..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {objetivosEspecificos.filter(obj => obj.objetivo.trim() !== "").map((obj, i) => (
+                                  <SelectItem key={i} value={obj.objetivo}>{obj.objetivo}</SelectItem>
+                                ))}
+                                {objetivosEspecificos.filter(obj => obj.objetivo.trim() !== "").length === 0 && (
+                                  <SelectItem value="none" disabled>Cadastre um objetivo acima</SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-2"><Textarea value={c.acao} onChange={e => updateCronogramaAba1(c.id, "acao", e.target.value)} className="h-9 min-h-[36px] focus:min-h-[80px] text-xs resize-none transition-all" placeholder="Descreva a ação..." /></td>
                           <td className="p-2"><Input type="date" value={c.previsaoInicio} onChange={e => updateCronogramaAba1(c.id, "previsaoInicio", e.target.value)} className="h-9 text-xs" /></td>
                           <td className="p-2"><Input type="date" value={c.previsaoEntrega} onChange={e => updateCronogramaAba1(c.id, "previsaoEntrega", e.target.value)} className="h-9 text-xs" /></td>
                           <td className="p-2 text-center">
@@ -1128,7 +1181,7 @@ export function DemandasPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button variant="outline" size="lg"><Save className="w-4 h-4 mr-2" /> Salvar Rascunho</Button>
+                <Button variant="outline" size="lg" onClick={() => handleSubmit(true)}><Save className="w-4 h-4 mr-2" /> Salvar Rascunho</Button>
                 <Button size="lg" onClick={() => setCurrentTab("plano")} className="bg-[#2F6B38] hover:bg-[#1a4122]">Avançar para Plano de Trabalho</Button>
               </div>
             </CardContent>
@@ -1156,12 +1209,18 @@ export function DemandasPage() {
 
                 {campusInfo ? (
                   <div className="bg-[#2F6B38]/5 border border-[#2F6B38]/20 rounded-lg p-4 mb-4 text-sm">
-                    <div className="grid grid-cols-3 gap-2">
-                      <div><span className="font-semibold text-gray-700">Instituição: </span><span className="text-gray-600">Instituto Federal de Educação, Ciência e Tecnologia de Rondônia</span></div>
-                      <div><span className="font-semibold text-gray-700">Sigla: </span><span className="text-gray-600">IFRO</span></div>
-                      <div><span className="font-semibold text-gray-700">CNPJ: </span><span className="text-gray-600">{campusInfo.cnpj}</span></div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><span className="font-semibold text-gray-700">Nome/Razão Social: </span><span className="text-gray-600">{campusInfo.razao_social || campusInfo.nome}</span></div>
+                      <div><span className="font-semibold text-gray-700">Sigla: </span><span className="text-gray-600">{campusInfo.sigla || "IFRO"}</span></div>
+                      <div><span className="font-semibold text-gray-700">CNPJ: </span><span className="text-gray-600">{campusInfo.cnpj || "-"}</span></div>
+                      <div><span className="font-semibold text-gray-700">Natureza Jurídica: </span><span className="text-gray-600">Autarquia Federal</span></div>
+                      <div><span className="font-semibold text-gray-700">Diretor(a) Geral: </span><span className="text-gray-600">{campusInfo.diretor_geral || "-"}</span></div>
+                      <div><span className="font-semibold text-gray-700">Áreas de Especialização: </span><span className="text-gray-600">{campusInfo.areas_especializacao || "-"}</span></div>
+                      <div><span className="font-semibold text-gray-700">Telefone: </span><span className="text-gray-600">{campusInfo.telefone || "-"}</span></div>
+                      <div><span className="font-semibold text-gray-700">E-mail: </span><span className="text-gray-600">{campusInfo.email || "-"}</span></div>
+                      <div className="col-span-2"><span className="font-semibold text-gray-700">Endereço: </span><span className="text-gray-600">{campusInfo.logradouro ? `${campusInfo.logradouro}, ${campusInfo.numero} - ${campusInfo.bairro}, ${campusInfo.cidade} - ${campusInfo.estado}` : campusInfo.endereco || "-"}</span></div>
                     </div>
-                    <p className="text-xs text-[#2F6B38] mt-2 italic">↑ Preenchido automaticamente com base no campus selecionado na Aba 1</p>
+                    <p className="text-xs text-[#2F6B38] mt-3 italic text-center">↑ Dados preenchidos automaticamente com base no campus selecionado na Aba 1</p>
                   </div>
                 ) : (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-700">
@@ -1170,23 +1229,10 @@ export function DemandasPage() {
                 )}
 
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="col-span-2 space-y-1.5"><Label className="text-sm font-semibold">Endereço</Label><Input placeholder="Logradouro, número" value={instEndereco} onChange={e => setInstEndereco(e.target.value)} className="h-10" /></div>
-                    <div className="space-y-1.5"><Label className="text-sm font-semibold">Bairro</Label><Input placeholder="Bairro" value={instBairro} onChange={e => setInstBairro(e.target.value)} className="h-10" /></div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5"><Label className="text-sm font-semibold">Cidade / Estado / CEP</Label><Input placeholder="Ex: Ji-Paraná/RO – 76900-000" value={instCidadeEstadoCep} onChange={e => setInstCidadeEstadoCep(e.target.value)} className="h-10" /></div>
-                    <div className="space-y-1.5"><Label className="text-sm font-semibold">Unidade Executora</Label><Input placeholder="Ex: Campus Ji-Paraná" value={instUnidadeExecutora} onChange={e => setInstUnidadeExecutora(e.target.value)} className="h-10" /></div>
-                    <div className="space-y-1.5"><Label className="text-sm font-semibold">Telefone</Label><Input placeholder="(69) XXXX-XXXX" value={instTelCampus} onChange={e => setInstTelCampus(formatTelefone(e.target.value))} className="h-10" /></div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5"><Label className="text-sm font-semibold">E-mail</Label><Input placeholder="campus@ifro.edu.br" value={instEmail} onChange={e => setInstEmail(e.target.value)} className="h-10" /></div>
-                    <div className="space-y-1.5"><Label className="text-sm font-semibold">Site</Label><Input placeholder="https://www.ifro.edu.br" value={instSite} onChange={e => setInstSite(e.target.value)} className="h-10" /></div>
-                  </div>
                   <div className="border rounded-lg p-4 bg-gray-50">
-                    <p className="text-sm font-semibold text-[#2F6B38] mb-3">Responsável (Coordenador(a) Geral)</p>
+                    <p className="text-sm font-semibold text-[#2F6B38] mb-3">Dirigente da Instituição Executora (Diretor Geral)</p>
                     <div className="grid grid-cols-4 gap-3">
-                      <div className="col-span-2 space-y-1.5"><Label className="text-xs font-semibold">Nome</Label><Input value={coordGeralNome} readOnly className="h-9 text-sm bg-gray-100" placeholder="Preencher na aba Projeto" /></div>
+                      <div className="col-span-2 space-y-1.5"><Label className="text-xs font-semibold">Nome</Label><Input value={campusInfo?.diretor_geral || ""} readOnly className="h-9 text-sm bg-gray-100" placeholder="Preenchido automaticamente" /></div>
                       <div className="space-y-1.5"><Label className="text-xs font-semibold">CPF</Label><Input placeholder="000.000.000-00" value={instCpf} onChange={e => setInstCpf(e.target.value)} className="h-9 text-sm" /></div>
                       <div className="space-y-1.5"><Label className="text-xs font-semibold">Matrícula SIAPE</Label><Input placeholder="0000000" value={instMatricula} onChange={e => setInstMatricula(e.target.value)} className="h-9 text-sm" /></div>
                     </div>
@@ -1340,7 +1386,7 @@ export function DemandasPage() {
                                 </Select>
                               </td>
                               <td className="p-2">
-                                <Input value={etapa.valor} onChange={e => updateEtapa(meta.id, etapa.id, "valor", e.target.value)} className="h-9 text-xs" placeholder="R$ 0,00" />
+                                <Input value={etapa.valor} onChange={e => updateEtapa(meta.id, etapa.id, "valor", formatCurrencyInput(e.target.value))} className="h-9 text-xs" placeholder="R$ 0,00" />
                               </td>
                               <td className="p-2"><Input type="date" value={etapa.inicio} onChange={e => updateEtapa(meta.id, etapa.id, "inicio", e.target.value)} className="h-9 text-xs" /></td>
                               <td className="p-2"><Input type="date" value={etapa.termino} onChange={e => updateEtapa(meta.id, etapa.id, "termino", e.target.value)} className="h-9 text-xs" /></td>
@@ -1392,7 +1438,7 @@ export function DemandasPage() {
                             <td className="p-3">
                               <Badge variant="outline" className="font-mono text-xs border-amber-400 text-amber-700 bg-amber-50">{item.rubrica}</Badge>
                             </td>
-                            <td className="p-2"><Input value={item.valor} onChange={e => updateMetaTodas(item.id, "valor", e.target.value)} className="h-9 text-xs" placeholder="R$ 0,00" /></td>
+                            <td className="p-2"><Input value={item.valor} onChange={e => updateMetaTodas(item.id, "valor", formatCurrencyInput(e.target.value))} className="h-9 text-xs" placeholder="R$ 0,00" /></td>
                             <td className="p-2"><Input type="date" value={item.inicio} onChange={e => updateMetaTodas(item.id, "inicio", e.target.value)} className="h-9 text-xs" /></td>
                             <td className="p-2"><Input type="date" value={item.termino} onChange={e => updateMetaTodas(item.id, "termino", e.target.value)} className="h-9 text-xs" /></td>
                           </tr>
@@ -1520,8 +1566,8 @@ export function DemandasPage() {
 
               <div className="flex gap-3 pt-4 border-t">
                 <Button variant="outline" size="lg" onClick={() => setCurrentTab("projeto")}>Voltar para Projeto</Button>
-                <Button variant="outline" size="lg"><Save className="w-4 h-4 mr-2" /> Salvar Rascunho</Button>
-                <Button size="lg" onClick={handleSubmit} className="bg-[#2F6B38] hover:bg-[#1a4122]">Submeter Projeto Completo</Button>
+                <Button variant="outline" size="lg" onClick={() => handleSubmit(true)}><Save className="w-4 h-4 mr-2" /> Salvar Rascunho</Button>
+                <Button size="lg" onClick={() => handleSubmit(false)} className="bg-[#2F6B38] hover:bg-[#1a4122]">Submeter Projeto Completo</Button>
               </div>
             </CardContent>
           </Card>

@@ -108,12 +108,12 @@ export function MatchingPage() {
 
     const { data: relacoes } = await supabase.from('comissao_especialistas').select(`
       comissao_id,
-      especialista:especialistas (nome)
+      especialista:perfis (nome_completo)
     `);
 
     const formatadas = comissoesData.map((c: any) => {
       const espRel = relacoes?.filter((r: any) => r.comissao_id === c.id) || [];
-      const nomes = espRel.map((r: any) => r.especialista?.nome || "Desconhecido");
+      const nomes = espRel.map((r: any) => r.especialista?.nome_completo || "Desconhecido");
       
       return {
         id: c.id,

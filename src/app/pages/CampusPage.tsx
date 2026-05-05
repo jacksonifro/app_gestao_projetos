@@ -10,15 +10,21 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Badge } from "../components/ui/badge";
 import { supabase } from "../../lib/supabase";
-import { formatTelefone } from "../../lib/masks";
+import { formatTelefone, formatCNPJ } from "../../lib/masks";
 
 interface Campus {
   id: string;
+  razaoSocial: string;
+  sigla: string;
   nome: string;
+  cnpj: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
   cidade: string;
-  endereco: string;
+  estado: string;
   areasEspecializacao: string;
-  coordenador: string;
+  diretorGeral: string;
   email: string;
   telefone: string;
 }
@@ -35,13 +41,19 @@ export function CampusPage() {
     if (!error && data) {
       const formatted = data.map(d => ({
         id: d.id,
-        nome: d.nome,
-        cidade: d.cidade,
-        endereco: d.endereco,
-        areasEspecializacao: d.areas_especializacao,
-        coordenador: d.coordenador,
-        email: d.email,
-        telefone: d.telefone
+        razaoSocial: d.razao_social || "",
+        sigla: d.sigla || "",
+        nome: d.nome || "",
+        cnpj: d.cnpj || "",
+        logradouro: d.logradouro || d.endereco || "", // Fallback to old endereco if needed
+        numero: d.numero || "",
+        bairro: d.bairro || "",
+        cidade: d.cidade || "",
+        estado: d.estado || "",
+        areasEspecializacao: d.areas_especializacao || "",
+        diretorGeral: d.diretor_geral || d.coordenador || "", // Fallback to coordenador
+        email: d.email || "",
+        telefone: d.telefone || ""
       }));
       setCampusList(formatted);
     }
@@ -53,11 +65,17 @@ export function CampusPage() {
   const [editingItem, setEditingItem] = useState<Campus | null>(null);
   const [viewingItem, setViewingItem] = useState<Campus | null>(null);
   const [formData, setFormData] = useState({
+    razaoSocial: "",
+    sigla: "",
     nome: "",
+    cnpj: "",
+    logradouro: "",
+    numero: "",
+    bairro: "",
     cidade: "",
-    endereco: "",
+    estado: "",
     areasEspecializacao: "",
-    coordenador: "",
+    diretorGeral: "",
     email: "",
     telefone: "",
   });
@@ -70,11 +88,17 @@ export function CampusPage() {
   const handleEdit = (item: Campus) => {
     setEditingItem(item);
     setFormData({
+      razaoSocial: item.razaoSocial,
+      sigla: item.sigla,
       nome: item.nome,
+      cnpj: item.cnpj,
+      logradouro: item.logradouro,
+      numero: item.numero,
+      bairro: item.bairro,
       cidade: item.cidade,
-      endereco: item.endereco,
+      estado: item.estado,
       areasEspecializacao: item.areasEspecializacao,
-      coordenador: item.coordenador,
+      diretorGeral: item.diretorGeral,
       email: item.email,
       telefone: item.telefone,
     });
@@ -97,11 +121,17 @@ export function CampusPage() {
     e.preventDefault();
 
     const payload = {
+      razao_social: formData.razaoSocial,
+      sigla: formData.sigla,
       nome: formData.nome,
+      cnpj: formData.cnpj,
+      logradouro: formData.logradouro,
+      numero: formData.numero,
+      bairro: formData.bairro,
       cidade: formData.cidade,
-      endereco: formData.endereco,
+      estado: formData.estado,
       areas_especializacao: formData.areasEspecializacao,
-      coordenador: formData.coordenador,
+      diretor_geral: formData.diretorGeral,
       email: formData.email,
       telefone: formData.telefone
     };
@@ -130,11 +160,17 @@ export function CampusPage() {
   const resetForm = () => {
     setEditingItem(null);
     setFormData({
+      razaoSocial: "",
+      sigla: "",
       nome: "",
+      cnpj: "",
+      logradouro: "",
+      numero: "",
+      bairro: "",
       cidade: "",
-      endereco: "",
+      estado: "",
       areasEspecializacao: "",
-      coordenador: "",
+      diretorGeral: "",
       email: "",
       telefone: "",
     });
@@ -147,9 +183,10 @@ export function CampusPage() {
 
   const filteredCampus = campusList.filter((item) =>
     item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.sigla.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.areasEspecializacao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.coordenador.toLowerCase().includes(searchTerm.toLowerCase())
+    item.diretorGeral.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -181,10 +218,20 @@ export function CampusPage() {
             </DialogHeader>
 
             <form onSubmit={handleSubmit}>
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome do Campus *</Label>
+              <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1">
+                <div className="space-y-2">
+                  <Label htmlFor="razaoSocial">Razão Social do Campus</Label>
+                  <Input
+                    id="razaoSocial"
+                    value={formData.razaoSocial}
+                    onChange={(e) => setFormData({ ...formData, razaoSocial: e.target.value })}
+                    placeholder="Ex: Instituto Federal de Educação, Ciência e Tecnologia de Rondônia - Campus Ji-Paraná"
+                  />
+                </div>
+
+                <div className="grid grid-cols-12 gap-4">
+                  <div className="col-span-8 space-y-2">
+                    <Label htmlFor="nome">Nome do Campus (Curto) *</Label>
                     <Input
                       id="nome"
                       value={formData.nome}
@@ -193,76 +240,127 @@ export function CampusPage() {
                       required
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cidade">Cidade *</Label>
+                  <div className="col-span-4 space-y-2">
+                    <Label htmlFor="sigla">Sigla</Label>
                     <Input
-                      id="cidade"
-                      value={formData.cidade}
-                      onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
-                      placeholder="Ex: Ji-Paraná"
-                      required
+                      id="sigla"
+                      value={formData.sigla}
+                      onChange={(e) => setFormData({ ...formData, sigla: e.target.value })}
+                      placeholder="Ex: JIP"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="endereco">Endereço Completo *</Label>
-                  <Input
-                    id="endereco"
-                    value={formData.endereco}
-                    onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                    placeholder="Rua, número, bairro"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="areas">Áreas de Especialização *</Label>
-                  <Textarea
-                    id="areas"
-                    value={formData.areasEspecializacao}
-                    onChange={(e) => setFormData({ ...formData, areasEspecializacao: e.target.value })}
-                    placeholder="Ex: Automação Industrial, Mecânica, Informática"
-                    rows={2}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="coordenador">Coordenador(a) *</Label>
+                    <Label htmlFor="cnpj">CNPJ</Label>
                     <Input
-                      id="coordenador"
-                      value={formData.coordenador}
-                      onChange={(e) => setFormData({ ...formData, coordenador: e.target.value })}
-                      placeholder="Nome do coordenador"
-                      required
+                      id="cnpj"
+                      value={formData.cnpj}
+                      onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
+                      placeholder="00.000.000/0000-00"
                     />
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="email">E-mail *</Label>
+                    <Label htmlFor="diretorGeral">Diretor(a) Geral</Label>
+                    <Input
+                      id="diretorGeral"
+                      value={formData.diretorGeral}
+                      onChange={(e) => setFormData({ ...formData, diretorGeral: e.target.value })}
+                      placeholder="Nome do diretor geral"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                  <h4 className="font-semibold text-gray-700 text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Endereço</h4>
+                  
+                  <div className="grid grid-cols-12 gap-4">
+                    <div className="col-span-9 space-y-2">
+                      <Label htmlFor="logradouro">Logradouro / Rua</Label>
+                      <Input
+                        id="logradouro"
+                        value={formData.logradouro}
+                        onChange={(e) => setFormData({ ...formData, logradouro: e.target.value })}
+                        placeholder="Ex: Rua Rio Amazonas"
+                      />
+                    </div>
+                    <div className="col-span-3 space-y-2">
+                      <Label htmlFor="numero">Número</Label>
+                      <Input
+                        id="numero"
+                        value={formData.numero}
+                        onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                        placeholder="Ex: 152"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-4">
+                    <div className="col-span-5 space-y-2">
+                      <Label htmlFor="bairro">Bairro</Label>
+                      <Input
+                        id="bairro"
+                        value={formData.bairro}
+                        onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
+                        placeholder="Ex: Jardim dos Migrantes"
+                      />
+                    </div>
+                    <div className="col-span-5 space-y-2">
+                      <Label htmlFor="cidade">Cidade *</Label>
+                      <Input
+                        id="cidade"
+                        value={formData.cidade}
+                        onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                        placeholder="Ex: Ji-Paraná"
+                        required
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-2">
+                      <Label htmlFor="estado">UF</Label>
+                      <Input
+                        id="estado"
+                        value={formData.estado}
+                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                        placeholder="RO"
+                        maxLength={2}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-mail</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="campus@ifro.edu.br"
-                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="telefone">Telefone *</Label>
+                    <Label htmlFor="telefone">Telefone</Label>
                     <Input
                       id="telefone"
                       value={formData.telefone}
                       onChange={(e) => setFormData({ ...formData, telefone: formatTelefone(e.target.value) })}
                       placeholder="(69) 0000-0000"
-                      required
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="areas">Áreas de Especialização</Label>
+                  <Textarea
+                    id="areas"
+                    value={formData.areasEspecializacao}
+                    onChange={(e) => setFormData({ ...formData, areasEspecializacao: e.target.value })}
+                    placeholder="Ex: Automação Industrial, Mecânica, Informática"
+                    rows={2}
+                  />
                 </div>
               </div>
 
@@ -287,53 +385,71 @@ export function CampusPage() {
           </DialogHeader>
 
           {viewingItem && (
-            <div className="space-y-6 py-4">
+            <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto px-1">
               <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border">
                 <div className="w-14 h-14 bg-gradient-to-br from-[#2F6B38]/10 to-[#2F6B38]/20 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Building2 className="w-7 h-7 text-[#2F6B38]" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-xl text-gray-900">{viewingItem.nome}</h3>
-                  <p className="text-gray-600 flex items-center gap-2 mt-1">
-                    <MapPin className="w-4 h-4" />
-                    {viewingItem.cidade}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-bold text-xl text-gray-900">{viewingItem.nome}</h3>
+                    {viewingItem.sigla && <Badge className="bg-gray-200 text-gray-800">{viewingItem.sigla}</Badge>}
+                  </div>
+                  {viewingItem.razaoSocial && <p className="text-xs text-gray-500 mt-1">{viewingItem.razaoSocial}</p>}
+                  {viewingItem.cnpj && <p className="text-xs text-gray-500 mt-0.5">CNPJ: {viewingItem.cnpj}</p>}
                 </div>
               </div>
 
-              <div>
-                <Label className="text-gray-500 text-xs uppercase">Endereço Completo</Label>
-                <p className="text-gray-900 mt-1">{viewingItem.endereco}</p>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <h4 className="text-gray-900 font-bold flex items-center gap-2 mb-3"><MapPin className="w-4 h-4 text-[#2F6B38]"/> Endereço Completo</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500 block text-xs">Logradouro</span>
+                    <span className="font-medium text-gray-900">{viewingItem.logradouro || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-xs">Número</span>
+                    <span className="font-medium text-gray-900">{viewingItem.numero || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-xs">Bairro</span>
+                    <span className="font-medium text-gray-900">{viewingItem.bairro || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-xs">Cidade/UF</span>
+                    <span className="font-medium text-gray-900">{viewingItem.cidade}{viewingItem.estado ? ` - ${viewingItem.estado}` : ""}</span>
+                  </div>
+                </div>
               </div>
 
               <div>
                 <Label className="text-gray-500 text-xs uppercase mb-2 block">Áreas de Especialização</Label>
                 <div className="flex flex-wrap gap-2">
-                  {viewingItem.areasEspecializacao.split(",").map((area, idx) => (
+                  {viewingItem.areasEspecializacao ? viewingItem.areasEspecializacao.split(",").map((area, idx) => (
                     <Badge key={idx} variant="outline" className="font-semibold">
                       {area.trim()}
                     </Badge>
-                  ))}
+                  )) : <span className="text-sm text-gray-500">Nenhuma área informada.</span>}
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-6 pt-4 border-t">
                 <div>
-                  <Label className="text-gray-500 text-xs uppercase">Coordenador(a)</Label>
-                  <p className="font-semibold text-gray-900 mt-1">{viewingItem.coordenador}</p>
+                  <Label className="text-gray-500 text-xs uppercase">Diretor(a) Geral</Label>
+                  <p className="font-semibold text-gray-900 mt-1">{viewingItem.diretorGeral || "-"}</p>
                 </div>
                 <div>
                   <Label className="text-gray-500 text-xs uppercase">E-mail</Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Mail className="w-4 h-4 text-gray-400" />
-                    <p className="text-gray-900">{viewingItem.email}</p>
+                    <p className="text-gray-900">{viewingItem.email || "-"}</p>
                   </div>
                 </div>
                 <div>
                   <Label className="text-gray-500 text-xs uppercase">Telefone</Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Phone className="w-4 h-4 text-gray-400" />
-                    <p className="text-gray-900">{viewingItem.telefone}</p>
+                    <p className="text-gray-900">{viewingItem.telefone || "-"}</p>
                   </div>
                 </div>
               </div>
@@ -374,7 +490,7 @@ export function CampusPage() {
                 <TableHead className="font-bold">Nome do Campus</TableHead>
                 <TableHead className="font-bold">Localização</TableHead>
                 <TableHead className="font-bold">Áreas de Especialização</TableHead>
-                <TableHead className="font-bold">Coordenador</TableHead>
+                <TableHead className="font-bold">Diretor Geral</TableHead>
                 <TableHead className="font-bold">Contato</TableHead>
                 <TableHead className="font-bold text-center">Ações</TableHead>
               </TableRow>
@@ -382,13 +498,18 @@ export function CampusPage() {
             <TableBody>
               {filteredCampus.map((campus) => (
                 <TableRow key={campus.id} className="hover:bg-gray-50">
-                  <TableCell className="font-semibold text-gray-900">{campus.nome}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-gray-900">{campus.nome} {campus.sigla ? `(${campus.sigla})` : ""}</span>
+                      {campus.cnpj && <span className="text-xs text-gray-500">CNPJ: {campus.cnpj}</span>}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-start gap-1">
                       <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="font-semibold text-gray-900">{campus.cidade}</p>
-                        <p className="text-xs text-gray-600">{campus.endereco}</p>
+                        <p className="font-semibold text-gray-900">{campus.cidade}{campus.estado ? ` - ${campus.estado}` : ""}</p>
+                        <p className="text-xs text-gray-600">{campus.logradouro ? `${campus.logradouro}, ${campus.numero}` : "-"}</p>
                       </div>
                     </div>
                   </TableCell>
@@ -406,7 +527,7 @@ export function CampusPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-semibold text-gray-900">{campus.coordenador}</TableCell>
+                  <TableCell className="font-semibold text-gray-900">{campus.diretorGeral || "-"}</TableCell>
                   <TableCell>
                     <div className="text-xs text-gray-700">
                       <div>{campus.email}</div>
